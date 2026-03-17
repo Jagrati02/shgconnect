@@ -1,0 +1,14 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<h2>Add Product</h2>
+
+<form method="POST">
+    {% csrf_token %}
+    <input type="text" name="name" class="form-control mb-2" placeholder="Product Name">
+    <input type="number" name="price" class="form-control mb-2" placeholder="Price">
+    <button class="btn btn-primary">Add</button>
+    <a href="{% url 'place_order' product.id %}" class="btn btn-success">Buy</a>
+</form>
+
+{% endblock %}
