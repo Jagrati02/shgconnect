@@ -1,9 +1,160 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SahayogBazaar — Home{% endblock %}
 
 {% block content %}
 
-<h2>Welcome to SHGConnect</h2>
+<!-- ══════════════════════════════ HERO ══════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg-pattern"></div>
+  <div class="hero-inner container">
+    <div class="hero-text">
+      <span class="hero-eyebrow">🌾 Powered by AI · Built for Bharat</span>
+      <h1 class="hero-headline">
+        From Village Hands<br>
+        <em>To Market Demand</em>
+      </h1>
+      <p class="hero-sub">
+        SahayogBazaar connects self-help groups with buyers at scale —
+        using ML-driven clustering and demand forecasting to ensure your
+        products reach the right market at the right time.
+      </p>
+      <div class="hero-cta">
+        <a href="{% url 'signup' %}" class="btn btn-primary btn-lg">Get Started Free</a>
+        <a href="#how-it-works" class="btn btn-ghost btn-lg">See How It Works ↓</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-num">1,200+</span><span class="stat-label">SHGs Onboarded</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num">₹4.2Cr</span><span class="stat-label">Orders Fulfilled</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num">18 States</span><span class="stat-label">Coverage</span></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-card card-float">
+        <div class="hcard-top">
+          <span class="hcard-icon">📦</span>
+          <span class="hcard-label">Bulk Order</span>
+        </div>
+        <div class="hcard-product">Handwoven Jute Bags</div>
+        <div class="hcard-meta">
+          <span class="hcard-qty">5,000 units</span>
+          <span class="hcard-badge">Clustered ✓</span>
+        </div>
+        <div class="hcard-bar-wrap">
+          <div class="hcard-bar" style="width:78%"></div>
+        </div>
+        <div class="hcard-footer">78% Demand Matched</div>
+      </div>
+      <div class="hero-card card-float-2">
+        <span class="hcard-icon">📈</span>
+        <span class="hcard-label">Forecast Accuracy</span>
+        <div class="hcard-big">92.4%</div>
+      </div>
+      <div class="hero-orb orb-1"></div>
+      <div class="hero-orb orb-2"></div>
+    </div>
+  </div>
+  <div class="hero-wave">
+    <svg viewBox="0 0 1440 80" preserveAspectRatio="none"><path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="var(--bg-main)"/></svg>
+  </div>
+</section>
 
-<p>Marketplace for Self Help Groups</p>
+<!-- ══════════════════════════════ HOW IT WORKS ══════════════════════════════ -->
+<section class="section" id="how-it-works">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Process</span>
+      <h2 class="section-title">How SahayogBazaar Works</h2>
+      <p class="section-sub">Three intelligent steps from production to purchase.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon">🧩</div>
+        <h3>SHG Clustering</h3>
+        <p>Our ML model groups nearby SHGs by product type and capacity to fulfill large bulk orders that no single group could handle alone.</p>
+      </div>
+      <div class="step-connector">→</div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon">🔮</div>
+        <h3>Demand Forecasting</h3>
+        <p>We analyze market trends, seasonal patterns, and buyer history to predict demand — helping SHGs produce the right quantity.</p>
+      </div>
+      <div class="step-connector">→</div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon">🤝</div>
+        <h3>Market Matching</h3>
+        <p>Verified buyers place bulk orders, SHG clusters get fair pricing, and deliveries are tracked end-to-end on our platform.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ FEATURES ══════════════════════════════ -->
+<section class="section section-alt" id="about">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Features</span>
+      <h2 class="section-title">Everything Your SHG Needs</h2>
+    </div>
+    <div class="features-grid">
+      {% for feature in features %}
+        <div class="feature-card">
+          <span class="feature-icon">{{ feature.icon }}</span>
+          <h4>{{ feature.title }}</h4>
+          <p>{{ feature.description }}</p>
+        </div>
+      {% empty %}
+        <div class="feature-card"><span class="feature-icon">🗺️</span><h4>SHG Dashboard</h4><p>Manage your group's inventory, orders, and earnings in one place.</p></div>
+        <div class="feature-card"><span class="feature-icon">📊</span><h4>AI Demand Insights</h4><p>Get weekly forecasts tailored to your product category and region.</p></div>
+        <div class="feature-card"><span class="feature-icon">🔗</span><h4>Cluster Networks</h4><p>Automatically matched with nearby SHGs to take on larger orders together.</p></div>
+        <div class="feature-card"><span class="feature-icon">💳</span><h4>Secure Payments</h4><p>Direct bank transfers, UPI support, and escrow protection for every deal.</p></div>
+        <div class="feature-card"><span class="feature-icon">🚚</span><h4>Logistics Support</h4><p>Integrated last-mile delivery partners for rural and semi-urban areas.</p></div>
+        <div class="feature-card"><span class="feature-icon">🌐</span><h4>Multilingual UI</h4><p>Available in Hindi, Tamil, Telugu, and more to serve every SHG member.</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ TESTIMONIALS ══════════════════════════════ -->
+<section class="section" id="insights">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Stories</span>
+      <h2 class="section-title">Voices From the Ground</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <p>"We used to struggle finding buyers for our pickle jars. Now we fulfill orders of 2,000 units a month through clusters."</p>
+        <div class="t-author"><span class="t-avatar">🧕</span><div><strong>Rekha Devi</strong><small>Mahila SHG, Jaipur</small></div></div>
+      </div>
+      <div class="testimonial-card featured-t">
+        <p>"The demand forecast told us to produce 30% more before Diwali. We sold out completely — first time ever in 8 years."</p>
+        <div class="t-author"><span class="t-avatar">👩‍🌾</span><div><strong>Saraswati Bai</strong><small>Grameen SHG, Indore</small></div></div>
+      </div>
+      <div class="testimonial-card">
+        <p>"As a bulk buyer, I get quality-verified clusters of artisans. It saves weeks of sourcing effort for every order."</p>
+        <div class="t-author"><span class="t-avatar">👨‍💼</span><div><strong>Arjun Mehta</strong><small>Retail Buyer, Mumbai</small></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ CTA BANNER ══════════════════════════════ -->
+<section class="cta-banner">
+  <div class="container">
+    <h2>Ready to grow your SHG's reach?</h2>
+    <p>Join 1,200+ self-help groups already selling smarter with AI.</p>
+    <div class="cta-btns">
+      <a href="{% url 'signup' %}" class="btn btn-white btn-lg">Register Your SHG</a>
+      <a href="{% url 'login' %}" class="btn btn-ghost-white btn-lg">Login</a>
+    </div>
+  </div>
+</section>
 
 {% endblock %}
