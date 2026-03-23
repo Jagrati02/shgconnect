@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Orders — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Dashboard</span>
+      <h1 class="ph-title">My Orders</h1>
+      <p class="ph-sub">Track all your purchases in one place.</p>
+    </div>
+    <a href="{% url 'product_list' %}" class="btn btn-primary">Browse Marketplace →</a>
+  </div>
+</div>
+
+<div class="container orders-layout">
+
+  <!-- SUMMARY CARDS -->
+  <div class="order-summary-grid">
+    <div class="os-card">
+      <span class="os-icon">📦</span>
+      <div><span class="os-num">{{ total_orders|default:"0" }}</span><span class="os-label">Total Orders</span></div>
+    </div>
+    <div class="os-card">
+      <span class="os-icon">⏳</span>
+      <div><span class="os-num">{{ pending_orders|default:"0" }}</span><span class="os-label">Pending</span></div>
+    </div>
+    <div class="os-card">
+      <span class="os-icon">🚚</span>
+      <div><span class="os-num">{{ in_transit|default:"0" }}</span><span class="os-label">In Transit</span></div>
+    </div>
+    <div class="os-card os-card-highlight">
+      <span class="os-icon">✅</span>
+      <div><span class="os-num">{{ delivered_orders|default:"0" }}</span><span class="os-label">Delivered</span></div>
+    </div>
+    <div class="os-card">
+      <span class="os-icon">💰</span>
+      <div><span class="os-num">₹{{ total_value|default:"0" }}</span><span class="os-label">Total Value</span></div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="order-tabs">
+    <button class="otab active" data-tab="all">All Orders</button>
+    <button class="otab" data-tab="pending">Pending</button>
+    <button class="otab" data-tab="confirmed">Confirmed</button>
+    <button class="otab" data-tab="shipped">In Transit</button>
+    <button class="otab" data-tab="delivered">Delivered</button>
+    <button class="otab" data-tab="cancelled">Cancelled</button>
+  </div>
+
+  {% if orders %}
+    <div class="orders-list">
+      {% for order in orders %}
+        <!-- data-status uses order_status lowercased via model property -->
+        <div class="order-card" data-status="{{ order.order_status|lower }}">
+
+          <!-- Header -->
+          <div class="oc-header">
+            <div class="oc-id">
+              <span class="oc-label">Order ID</span>
+              <span class="oc-val">#{{ order.pk }}</span>
+            </div>
+            <div class="oc-date">
+              <span class="oc-label">Placed On</span>
+              <span class="oc-val">{{ order.order_date|date:"d M Y" }}</span>
+            </div>
+            <div class="oc-amount">
+              <span class="oc-label">Amount</span>
+              <span class="oc-val oc-price">₹{{ order.total_price }}</span>
+            </div>
+            <div class="oc-status-wrap">
+              <span class="status-pill status-{{ order.order_status|lower }}">
+                {% if order.order_status == 'PENDING' %}⏳
+                {% elif order.order_status == 'CONFIRMED' %}✔️
+                {% elif order.order_status == 'SHIPPED' %}🚚
+                {% elif order.order_status == 'DELIVERED' %}✅
+                {% elif order.order_status == 'CANCELLED' %}✕
+                {% endif %}
+                {{ order.get_order_status_display }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Items -->
+          {% for item in order.items.all %}
+          <div class="oc-product">
+            {% if item.product.image %}
+              <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="oc-thumb">
+            {% else %}
+              <div class="oc-thumb-placeholder">🧺</div>
+            {% endif %}
+            <div class="oc-product-info">
+              <h4><a href="{% url 'product_detail' item.product.pk %}">{{ item.product.name }}</a></h4>
+              <p class="oc-shg">{{ item.product.shg.shg_name }} · {{ item.product.shg.state }}</p>
+              <p class="oc-unit-price">₹{{ item.price }} × {{ item.quantity }} units</p>
+            </div>
+          </div>
+          {% endfor %}
+
+          <!-- Progress tracker -->
+          <div class="oc-progress">
+            <div class="progress-steps">
+              <div class="ps-step done"><div class="ps-dot"></div><span>Ordered</span></div>
+              <div class="ps-line {% if order.order_status in 'CONFIRMED,SHIPPED,DELIVERED' %}done{% endif %}"></div>
+              <div class="ps-step {% if order.order_status == 'CONFIRMED' or order.order_status == 'SHIPPED' or order.order_status == 'DELIVERED' %}done{% endif %} {% if order.order_status == 'CONFIRMED' %}active{% endif %}">
+                <div class="ps-dot"></div><span>Confirmed</span>
+              </div>
+              <div class="ps-line {% if order.order_status == 'SHIPPED' or order.order_status == 'DELIVERED' %}done{% endif %}"></div>
+              <div class="ps-step {% if order.order_status == 'SHIPPED' or order.order_status == 'DELIVERED' %}done{% endif %} {% if order.order_status == 'SHIPPED' %}active{% endif %}">
+                <div class="ps-dot"></div><span>In Transit</span>
+              </div>
+              <div class="ps-line {% if order.order_status == 'DELIVERED' %}done{% endif %}"></div>
+              <div class="ps-step {% if order.order_status == 'DELIVERED' %}done active{% endif %}">
+                <div class="ps-dot"></div><span>Delivered</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="oc-actions">
+            <a href="{% url 'order_detail' order.pk %}" class="btn btn-outline btn-sm">View Details</a>
+
+            {% if order.order_status == 'DELIVERED' %}
+              <a href="{% url 'reorder' order.pk %}" class="btn btn-primary btn-sm">Reorder</a>
+              {% for item in order.items.all %}
+                {% if not item.review_rating %}
+                  <a href="{% url 'add_review' item.pk %}" class="btn btn-ghost btn-sm">✍ Write Review</a>
+                {% endif %}
+              {% endfor %}
+            {% elif order.order_status == 'PENDING' %}
+              <form method="post" action="{% url 'cancel_order' order.pk %}" style="display:inline"
+                    onsubmit="return confirm('Cancel this order?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost btn-sm text-danger">Cancel Order</button>
+              </form>
+            {% endif %}
+          </div>
+
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- PAGINATION -->
+    {% if orders.has_other_pages %}
+      <nav class="pagination">
+        {% if orders.has_previous %}
+          <a href="?page={{ orders.previous_page_number }}" class="page-btn">← Prev</a>
+        {% endif %}
+        {% for num in orders.paginator.page_range %}
+          {% if orders.number == num %}
+            <span class="page-btn page-current">{{ num }}</span>
+          {% elif num > orders.number|add:'-3' and num < orders.number|add:'3' %}
+            <a href="?page={{ num }}" class="page-btn">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if orders.has_next %}
+          <a href="?page={{ orders.next_page_number }}" class="page-btn">Next →</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <span class="es-icon">📋</span>
+      <h3>No orders yet</h3>
+      <p>Explore the marketplace to find products from SHGs near you.</p>
+      <a href="{% url 'product_list' %}" class="btn btn-primary">Explore Marketplace</a>
+    </div>
+  {% endif %}
+
+</div>
+
+<script>
+  const tabs  = document.querySelectorAll('.otab');
+  const cards = document.querySelectorAll('.order-card');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const filter = tab.dataset.tab;
+      cards.forEach(card => {
+        card.style.display =
+          filter === 'all' || card.dataset.status === filter ? 'block' : 'none';
+      });
+    });
+  });
+</script>
+
+{% endblock %}

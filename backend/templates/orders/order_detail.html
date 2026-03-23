@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order #{{ order.pk }} — SahayogBazaar{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Orders</span>
+      <h1 class="ph-title">Order #{{ order.pk }}</h1>
+      <p class="ph-sub">Placed on {{ order.order_date|date:"d M Y" }}</p>
+    </div>
+    <a href="{% url 'my_orders' %}" class="btn btn-outline btn-sm">← Back to Orders</a>
+  </div>
+</div>
+
+<div class="container" style="padding-top:32px; padding-bottom:60px; max-width:760px;">
+  <div class="dash-card">
+
+    <div class="oc-header">
+      <div class="oc-id"><span class="oc-label">Order ID</span><span class="oc-val">#{{ order.pk }}</span></div>
+      <div class="oc-date"><span class="oc-label">Date</span><span class="oc-val">{{ order.order_date|date:"d M Y" }}</span></div>
+      <div class="oc-amount"><span class="oc-label">Total</span><span class="oc-val oc-price">₹{{ order.total_price }}</span></div>
+      <div class="oc-status-wrap">
+        <span class="status-pill status-{{ order.order_status|lower }}">
+          {{ order.get_order_status_display }}
+        </span>
+      </div>
+    </div>
+
+    {% for item in order.items.all %}
+    <div class="oc-product">
+      {% if item.product.image %}
+        <img src="{{ item.product.image.url }}" alt="" class="oc-thumb">
+      {% else %}
+        <div class="oc-thumb-placeholder">🧺</div>
+      {% endif %}
+      <div class="oc-product-info">
+        <h4><a href="{% url 'product_detail' item.product.pk %}">{{ item.product.name }}</a></h4>
+        <p class="oc-shg">{{ item.product.shg.shg_name }}</p>
+        <p class="oc-unit-price">₹{{ item.price }} × {{ item.quantity }} = ₹{{ item.get_total }}</p>
+        {% if item.review_rating %}
+          <p style="font-size:0.82rem; color:var(--gold);">
+            {% for i in "12345" %}★{% endfor %} {{ item.review_rating }}/5
+          </p>
+          {% if item.review_comment %}<p style="font-size:0.85rem; color:var(--ink-soft);">{{ item.review_comment }}</p>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="oc-actions">
+      {% if order.order_status == 'DELIVERED' %}
+        <a href="{% url 'reorder' order.pk %}" class="btn btn-primary btn-sm">🔁 Reorder</a>
+        {% for item in order.items.all %}
+          {% if not item.review_rating %}
+            <a href="{% url 'add_review' item.pk %}" class="btn btn-outline btn-sm">✍ Write Review</a>
+          {% endif %}
+        {% endfor %}
+      {% elif order.order_status == 'PENDING' %}
+        <form method="post" action="{% url 'cancel_order' order.pk %}" onsubmit="return confirm('Cancel this order?')">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost btn-sm text-danger">Cancel Order</button>
+        </form>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
