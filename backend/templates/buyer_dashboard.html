@@ -1,0 +1,1028 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Buyer Dashboard — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<div class="dash-root">
+
+  <!-- ══════════════════════════════
+       SIDEBAR
+  ══════════════════════════════ -->
+  <aside class="dash-sidebar" id="dashSidebar">
+
+    <!-- Buyer identity -->
+    <div class="sidebar-profile">
+      <div class="sp-avatar">
+        {% if buyer.avatar %}
+          <img src="{{ buyer.avatar.url }}" alt="{{ request.user.get_full_name }}">
+        {% else %}
+          <span>{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}</span>
+        {% endif %}
+      </div>
+      <div class="sp-info">
+        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        <span>{{ buyer.company|default:"Individual Buyer" }}</span>
+      </div>
+      <div class="sp-badge sp-verified">🛒 Buyer</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <span class="snav-group-label">Overview</span>
+      <a href="#" class="snav-link active" data-section="overview">
+        <span class="snav-icon">🏠</span> Dashboard
+      </a>
+      <a href="#" class="snav-link" data-section="analytics">
+        <span class="snav-icon">📊</span> Spending Analytics
+      </a>
+
+      <span class="snav-group-label">Marketplace</span>
+      <a href="{% url 'product_list' %}" class="snav-link">
+        <span class="snav-icon">🛒</span> Browse Products
+      </a>
+      <a href="#" class="snav-link" data-section="wishlist">
+        <span class="snav-icon">♡</span> Wishlist
+        {% if wishlist_count %}<span class="snav-badge">{{ wishlist_count }}</span>{% endif %}
+      </a>
+      <a href="#" class="snav-link" data-section="recommendations">
+        <span class="snav-icon">✨</span> AI Picks For You
+      </a>
+
+      <span class="snav-group-label">Orders</span>
+      <a href="{% url 'my_orders' %}" class="snav-link">
+        <span class="snav-icon">📋</span> All Orders
+        {% if pending_orders %}<span class="snav-badge snav-badge-alert">{{ pending_orders }}</span>{% endif %}
+      </a>
+      <a href="#" class="snav-link" data-section="bulk_orders">
+        <span class="snav-icon">📦</span> Bulk Orders
+      </a>
+      <a href="#" class="snav-link" data-section="reorder">
+        <span class="snav-icon">🔁</span> Reorder
+      </a>
+
+      <span class="snav-group-label">Account</span>
+      <a href="#" class="snav-link" data-section="settings">
+        <span class="snav-icon">⚙️</span> Account Settings
+      </a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="snav-link snav-logout">
+          <span class="snav-icon">↩</span> Logout
+        </button>
+      </form>
+    </nav>
+
+  </aside>
+
+  <!-- ══════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════ -->
+  <div class="dash-main">
+
+    <!-- Top bar -->
+    <div class="dash-topbar">
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+      <div class="dt-left">
+        <h2 class="dt-greeting">
+          Welcome back, <em>{{ request.user.first_name|default:"Buyer" }}</em> 👋
+        </h2>
+        <span class="dt-date">{{ today|date:"l, d F Y" }}</span>
+      </div>
+      <div class="dt-right">
+        <a href="{% url 'product_list' %}" class="btn btn-primary btn-sm">Browse Products</a>
+        <div class="dt-notif" title="Notifications">
+          🔔
+          {% if notif_count %}<span class="notif-dot">{{ notif_count }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         SECTION: OVERVIEW
+    ══════════════════════════════ -->
+    <section class="dash-section active" id="section-overview">
+
+      <!-- KPI cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-revenue">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Spent</span>
+            <span class="kpi-value">₹{{ total_spent|default:"0" }}</span>
+            <span class="kpi-delta kpi-neutral">Lifetime purchases</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-orders">
+          <div class="kpi-icon">📦</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Orders</span>
+            <span class="kpi-value">{{ total_orders|default:"0" }}</span>
+            <span class="kpi-delta kpi-up">{{ orders_this_month|default:"0" }} this month</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-products">
+          <div class="kpi-icon">🧺</div>
+          <div class="kpi-body">
+            <span class="kpi-label">SHGs Supported</span>
+            <span class="kpi-value">{{ shgs_supported|default:"0" }}</span>
+            <span class="kpi-delta kpi-neutral">Across {{ states_covered|default:"0" }} states</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-cluster">
+          <div class="kpi-icon">🔁</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Repeat Orders</span>
+            <span class="kpi-value">{{ repeat_orders|default:"0" }}</span>
+            <span class="kpi-delta kpi-up">{{ repeat_pct|default:"0" }}% reorder rate</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-rating">
+          <div class="kpi-icon">⭐</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Avg Order Value</span>
+            <span class="kpi-value">₹{{ avg_order_value|default:"0" }}</span>
+            <span class="kpi-delta kpi-neutral">Per order</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 1: Spending chart + Active orders -->
+      <div class="dash-row-2">
+
+        <!-- Spending chart -->
+        <div class="dash-card dash-card-lg">
+          <div class="dc-header">
+            <h3>Spending Overview</h3>
+            <div class="dc-tabs">
+              <button class="dc-tab active" data-range="monthly">Monthly</button>
+              <button class="dc-tab" data-range="weekly">Weekly</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="spendingChart" height="220"></canvas>
+          </div>
+        </div>
+
+        <!-- Active orders tracker -->
+        <div class="dash-card">
+          <div class="dc-header">
+            <h3>Active Orders</h3>
+            <a href="{% url 'my_orders' %}" class="dc-link">View All →</a>
+          </div>
+          {% if active_orders %}
+            <div class="active-orders-list">
+              {% for order in active_orders %}
+                <div class="ao-item">
+                  <div class="ao-top">
+                    <div class="ao-product">
+                      <span class="ao-icon">📦</span>
+                      <div>
+                        <strong>{{ order.product.name }}</strong>
+                        <span>{{ order.quantity }} units · ₹{{ order.total_amount }}</span>
+                      </div>
+                    </div>
+                    <span class="status-pill status-{{ order.status|lower }}">{{ order.status|title }}</span>
+                  </div>
+                  <!-- Mini progress bar -->
+                  <div class="ao-progress">
+                    <div class="ao-steps">
+                      <span class="ao-step {% if order.status in 'pending,confirmed,transit,delivered' %}ao-done{% endif %}">Ordered</span>
+                      <span class="ao-line {% if order.status in 'confirmed,transit,delivered' %}ao-done{% endif %}"></span>
+                      <span class="ao-step {% if order.status in 'confirmed,transit,delivered' %}ao-done{% endif %}">Confirmed</span>
+                      <span class="ao-line {% if order.status in 'transit,delivered' %}ao-done{% endif %}"></span>
+                      <span class="ao-step {% if order.status in 'transit,delivered' %}ao-done{% endif %}">In Transit</span>
+                      <span class="ao-line {% if order.status == 'delivered' %}ao-done{% endif %}"></span>
+                      <span class="ao-step {% if order.status == 'delivered' %}ao-done{% endif %}">Delivered</span>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="dc-empty">
+              <span>📦</span>
+              <p>No active orders right now.</p>
+              <a href="{% url 'product_list' %}" class="btn btn-primary btn-sm" style="margin-top:10px">Browse Products</a>
+            </div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- Row 2: Recent orders + AI recommendations -->
+      <div class="dash-row-2">
+
+        <!-- Recent orders -->
+        <div class="dash-card">
+          <div class="dc-header">
+            <h3>Recent Orders</h3>
+            <a href="{% url 'my_orders' %}" class="dc-link">View All →</a>
+          </div>
+          {% if recent_orders %}
+            <div class="mini-orders">
+              {% for order in recent_orders %}
+                <div class="mo-row">
+                  <div class="mo-thumb">
+                    {% if order.product.images.first %}
+                      <img src="{{ order.product.images.first.image.url }}" alt="">
+                    {% else %}<span>🧺</span>{% endif %}
+                  </div>
+                  <div class="mo-info">
+                    <strong>{{ order.product.name }}</strong>
+                    <span>{{ order.quantity }} units · {{ order.created_at|date:"d M" }}</span>
+                  </div>
+                  <div class="mo-right">
+                    <span class="status-pill status-{{ order.status|lower }}">{{ order.status|title }}</span>
+                    <span class="mo-amount">₹{{ order.total_amount }}</span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="dc-empty"><span>📋</span><p>No orders placed yet</p></div>
+          {% endif %}
+        </div>
+
+        <!-- AI picks preview -->
+        <div class="dash-card">
+          <div class="dc-header">
+            <h3>✨ AI Picks For You</h3>
+            <a href="#" class="dc-link snav-trigger" data-section="recommendations">See All →</a>
+          </div>
+          {% if recommended_products %}
+            <div class="ai-picks-list">
+              {% for product in recommended_products|slice:":4" %}
+                <div class="aip-row">
+                  <div class="aip-img">
+                    {% if product.images.first %}
+                      <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}">
+                    {% else %}<span>🧺</span>{% endif %}
+                  </div>
+                  <div class="aip-info">
+                    <strong>{{ product.name }}</strong>
+                    <span>{{ product.shg.name }} · {{ product.shg.state }}</span>
+                    <span class="aip-price">₹{{ product.price_per_unit }}/{{ product.unit|default:"unit" }}</span>
+                  </div>
+                  <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline btn-sm">View</a>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="dc-empty"><span>✨</span><p>Place your first order to get personalised picks</p></div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- Alerts -->
+      {% if alerts %}
+      <div class="dash-card">
+        <div class="dc-header"><h3>🔔 Alerts</h3></div>
+        <div class="alerts-list">
+          {% for alert in alerts %}
+            <div class="alert-item alert-{{ alert.type }}">
+              <span class="ai-icon">{{ alert.icon }}</span>
+              <div class="ai-body">
+                <strong>{{ alert.title }}</strong>
+                <p>{{ alert.message }}</p>
+              </div>
+              <span class="ai-time">{{ alert.created_at|timesince }} ago</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </section>
+
+    <!-- ══════════════════════════════
+         SECTION: SPENDING ANALYTICS
+    ══════════════════════════════ -->
+    <section class="dash-section" id="section-analytics">
+      <div class="section-hd">
+        <h2>Spending Analytics</h2>
+        <p>Understand your purchasing patterns and category preferences.</p>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-revenue">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-body">
+            <span class="kpi-label">This Month</span>
+            <span class="kpi-value">₹{{ spent_this_month|default:"0" }}</span>
+            <span class="kpi-delta
+              {% if monthly_change >= 0 %}kpi-up{% else %}kpi-down{% endif %}">
+              {% if monthly_change >= 0 %}↑{% else %}↓{% endif %} {{ monthly_change|default:0 }}% vs last month
+            </span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-orders">
+          <div class="kpi-icon">🏆</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Top Category</span>
+            <span class="kpi-value" style="font-size:1.1rem;">{{ top_category|default:"—" }}</span>
+            <span class="kpi-delta kpi-neutral">{{ top_category_pct|default:0 }}% of orders</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-products">
+          <div class="kpi-icon">🗺️</div>
+          <div class="kpi-body">
+            <span class="kpi-label">States Sourced</span>
+            <span class="kpi-value">{{ states_covered|default:"0" }}</span>
+            <span class="kpi-delta kpi-neutral">Geographic diversity</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-cluster">
+          <div class="kpi-icon">🧩</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Cluster Orders</span>
+            <span class="kpi-value">{{ cluster_orders|default:"0" }}</span>
+            <span class="kpi-delta kpi-neutral">{{ cluster_pct|default:0 }}% of total</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-row-2">
+        <div class="dash-card dash-card-lg">
+          <div class="dc-header"><h3>Monthly Spending Trend</h3></div>
+          <div class="chart-wrap">
+            <canvas id="spendingTrendChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-header"><h3>Spending by Category</h3></div>
+          <div class="chart-wrap chart-wrap-donut">
+            <canvas id="buyerCategoryChart" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top purchased products -->
+      <div class="dash-card">
+        <div class="dc-header"><h3>Your Most Purchased Products</h3></div>
+        {% if top_purchased %}
+          <div class="dp-table-wrap" style="border:none; box-shadow:none; border-radius:0;">
+            <table class="dp-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Product</th>
+                  <th>SHG</th>
+                  <th>Orders</th>
+                  <th>Total Units</th>
+                  <th>Total Spent</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in top_purchased %}
+                  <tr class="dpt-row">
+                    <td><span class="tp-rank {% if forloop.first %}gold-rank{% endif %}">{{ forloop.counter }}</span></td>
+                    <td>
+                      <div class="dpt-product">
+                        {% if item.product.images.first %}
+                          <img src="{{ item.product.images.first.image.url }}" alt="" class="dpt-thumb">
+                        {% else %}
+                          <div class="dpt-thumb-ph">🧺</div>
+                        {% endif %}
+                        <div>
+                          <strong>{{ item.product.name }}</strong>
+                          <span>{{ item.product.category }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="dpt-buyer">{{ item.product.shg.name }}</td>
+                    <td class="dpt-orders">{{ item.order_count }}</td>
+                    <td class="dpt-orders">{{ item.total_units }}</td>
+                    <td class="dpt-price">₹{{ item.total_spent }}</td>
+                    <td>
+                      <a href="{% url 'place_order' item.product.pk %}" class="btn btn-primary btn-sm">Reorder</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="dc-empty" style="padding:48px;">
+            <span>📊</span>
+            <p>Purchase history will appear here.</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════
+         SECTION: WISHLIST
+    ══════════════════════════════ -->
+    <section class="dash-section" id="section-wishlist">
+      <div class="section-hd">
+        <h2>Wishlist</h2>
+        <p>Products you've saved for later.</p>
+      </div>
+
+      {% if wishlist_items %}
+        <div class="wishlist-grid">
+          {% for item in wishlist_items %}
+            <div class="wl-card" id="wlCard{{ item.product.pk }}">
+              <div class="pc-image-wrap">
+                {% if item.product.images.first %}
+                  <img src="{{ item.product.images.first.image.url }}" alt="{{ item.product.name }}" class="pc-image">
+                {% else %}
+                  <div class="pc-image-placeholder"><span>🧺</span></div>
+                {% endif %}
+                <div class="pc-badges">
+                  {% if item.product.cluster_ready %}<span class="badge badge-cluster">Cluster ✓</span>{% endif %}
+                  {% if item.product.is_trending %}<span class="badge badge-trend">📈 Trending</span>{% endif %}
+                </div>
+                <!-- Remove from wishlist -->
+                <form method="post" action="{% url 'remove_wishlist' item.product.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="pc-fav wl-remove" title="Remove from wishlist">♥</button>
+                </form>
+              </div>
+              <div class="pc-body">
+                <div class="pc-category">{{ item.product.category }}</div>
+                <h3 class="pc-name">
+                  <a href="{% url 'product_detail' item.product.pk %}">{{ item.product.name }}</a>
+                </h3>
+                <div class="pc-shg">
+                  <span class="shg-dot">⬡</span>
+                  {{ item.product.shg.name }} · {{ item.product.shg.state }}
+                </div>
+
+                <!-- Price change indicator -->
+                {% if item.price_changed %}
+                  <div class="wl-price-alert">
+                    {% if item.price_change > 0 %}
+                      <span class="wpa-up">↑ Price increased by ₹{{ item.price_change }}</span>
+                    {% else %}
+                      <span class="wpa-down">↓ Price dropped by ₹{{ item.price_change|stringformat:"+d" }}</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+
+                <div class="pc-footer">
+                  <div class="pc-pricing">
+                    <span class="pc-price">₹{{ item.product.price_per_unit }}</span>
+                    <span class="pc-unit">/ {{ item.product.unit|default:"unit" }}</span>
+                  </div>
+                  <div class="pc-moq">Min. <strong>{{ item.product.min_order_qty|default:50 }}</strong></div>
+                </div>
+              </div>
+              <div class="pc-actions">
+                <a href="{% url 'product_detail' item.product.pk %}" class="btn btn-outline btn-sm">Details</a>
+                <a href="{% url 'place_order' item.product.pk %}" class="btn btn-primary btn-sm">Order Now</a>
+              </div>
+              <div class="wl-added-date">Added {{ item.added_at|date:"d M Y" }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <span class="es-icon">♡</span>
+          <h3>Your wishlist is empty</h3>
+          <p>Save products while browsing to track prices and order later.</p>
+          <a href="{% url 'product_list' %}" class="btn btn-primary">Browse Marketplace</a>
+        </div>
+      {% endif %}
+    </section>
+
+    <!-- ══════════════════════════════
+         SECTION: AI RECOMMENDATIONS
+    ══════════════════════════════ -->
+    <section class="dash-section" id="section-recommendations">
+      <div class="section-hd">
+        <h2>✨ AI Picks For You</h2>
+        <p>Personalised product recommendations based on your order history and market trends.</p>
+      </div>
+
+      <!-- Recommendation reason chips -->
+      <div class="rec-reasons">
+        <span class="rec-chip active">All Picks</span>
+        <span class="rec-chip">Based on Past Orders</span>
+        <span class="rec-chip">Trending Now</span>
+        <span class="rec-chip">New Arrivals</span>
+        <span class="rec-chip">Seasonal Deals</span>
+      </div>
+
+      {% if recommended_products %}
+        <div class="product-grid" style="margin-top:20px;">
+          {% for product in recommended_products %}
+            <div class="product-card">
+              <div class="pc-image-wrap">
+                {% if product.images.first %}
+                  <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}" class="pc-image" loading="lazy">
+                {% else %}
+                  <div class="pc-image-placeholder"><span>🧺</span></div>
+                {% endif %}
+                <div class="pc-badges">
+                  {% if product.cluster_ready %}<span class="badge badge-cluster">Cluster ✓</span>{% endif %}
+                  {% if product.is_trending %}<span class="badge badge-trend">📈 Trending</span>{% endif %}
+                </div>
+                <div class="rec-reason-tag">{{ product.rec_reason|default:"Recommended" }}</div>
+              </div>
+              <div class="pc-body">
+                <div class="pc-category">{{ product.category }}</div>
+                <h3 class="pc-name"><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></h3>
+                <div class="pc-shg"><span class="shg-dot">⬡</span>{{ product.shg.name }} · {{ product.shg.state }}</div>
+                {% if product.demand_score %}
+                  <div class="pc-demand">
+                    <span class="demand-label">Demand</span>
+                    <div class="demand-bar-wrap"><div class="demand-bar" data-width="{{ product.demand_score }}"></div></div>
+                    <span class="demand-pct">{{ product.demand_score }}%</span>
+                  </div>
+                {% endif %}
+                <div class="pc-footer">
+                  <div class="pc-pricing">
+                    <span class="pc-price">₹{{ product.price_per_unit }}</span>
+                    <span class="pc-unit">/ {{ product.unit|default:"unit" }}</span>
+                  </div>
+                  <div class="pc-moq">Min. <strong>{{ product.min_order_qty|default:50 }}</strong></div>
+                </div>
+              </div>
+              <div class="pc-actions">
+                <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline btn-sm">View</a>
+                <a href="{% url 'place_order' product.pk %}" class="btn btn-primary btn-sm">Order</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <span class="es-icon">✨</span>
+          <h3>Recommendations coming soon</h3>
+          <p>Place a few orders and our AI will start curating personalised picks for you.</p>
+          <a href="{% url 'product_list' %}" class="btn btn-primary">Explore Marketplace</a>
+        </div>
+      {% endif %}
+    </section>
+
+    <!-- ══════════════════════════════
+         SECTION: BULK ORDERS
+    ══════════════════════════════ -->
+    <section class="dash-section" id="section-bulk_orders">
+      <div class="section-hd">
+        <h2>Bulk Orders</h2>
+        <p>Large orders matched with SHG clusters for maximum capacity and competitive pricing.</p>
+      </div>
+
+      <!-- Bulk order summary -->
+      <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="kpi-card kpi-revenue">
+          <div class="kpi-icon">📦</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Bulk Orders</span>
+            <span class="kpi-value">{{ bulk_order_count|default:"0" }}</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-cluster">
+          <div class="kpi-icon">🧩</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Cluster-Fulfilled</span>
+            <span class="kpi-value">{{ cluster_fulfilled|default:"0" }}</span>
+            <span class="kpi-delta kpi-neutral">Via ML clustering</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-orders">
+          <div class="kpi-icon">💸</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Saved via Bulk</span>
+            <span class="kpi-value">₹{{ bulk_savings|default:"0" }}</span>
+            <span class="kpi-delta kpi-up">vs unit price</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk orders table -->
+      {% if bulk_orders %}
+        <div class="dp-table-wrap">
+          <table class="dp-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+                <th>Cluster</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in bulk_orders %}
+                <tr class="dpt-row">
+                  <td><span class="dpt-id">#{{ order.order_id|default:order.pk }}</span></td>
+                  <td>
+                    <div class="dpt-product">
+                      <div class="dpt-thumb-ph">🧺</div>
+                      <strong>{{ order.product.name }}</strong>
+                    </div>
+                  </td>
+                  <td class="dpt-orders">{{ order.quantity }}</td>
+                  <td class="dpt-price">₹{{ order.unit_price }}</td>
+                  <td class="dpt-price">₹{{ order.total_amount }}</td>
+                  <td>
+                    {% if order.cluster_used %}
+                      <span class="badge badge-cluster" style="font-size:0.72rem;">⬡ {{ order.cluster_size }} SHGs</span>
+                    {% else %}
+                      <span style="font-size:0.8rem; color:var(--ink-soft);">Direct</span>
+                    {% endif %}
+                  </td>
+                  <td><span class="status-pill status-{{ order.status|lower }}">{{ order.status|title }}</span></td>
+                  <td class="dpt-date">{{ order.created_at|date:"d M Y" }}</td>
+                  <td><a href="{% url 'order_detail' order.pk %}" class="dpt-btn" title="View">👁</a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="dc-empty" style="padding:60px;">
+          <span>📦</span>
+          <p>No bulk orders yet. Orders above the cluster threshold will appear here.</p>
+          <a href="{% url 'product_list' %}" class="btn btn-primary" style="margin-top:14px;">Browse Products</a>
+        </div>
+      {% endif %}
+
+    </section>
+
+    <!-- ══════════════════════════════
+         SECTION: REORDER
+    ══════════════════════════════ -->
+    <section class="dash-section" id="section-reorder">
+      <div class="section-hd">
+        <h2>Quick Reorder</h2>
+        <p>One-click reorder from your purchase history.</p>
+      </div>
+
+      {% if reorder_products %}
+        <div class="reorder-grid">
+          {% for item in reorder_products %}
+            <div class="ro-card">
+              <div class="ro-img">
+                {% if item.product.images.first %}
+                  <img src="{{ item.product.images.first.image.url }}" alt="">
+                {% else %}
+                  <span>🧺</span>
+                {% endif %}
+              </div>
+              <div class="ro-info">
+                <strong>{{ item.product.name }}</strong>
+                <span>{{ item.product.shg.name }}</span>
+                <div class="ro-last">Last ordered {{ item.last_ordered|date:"d M Y" }} · {{ item.last_qty }} units</div>
+              </div>
+              <div class="ro-price">₹{{ item.product.price_per_unit }}<small>/{{ item.product.unit|default:"unit" }}</small></div>
+              <a href="{% url 'place_order' item.product.pk %}" class="btn btn-primary btn-sm ro-btn">
+                🔁 Reorder
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <span class="es-icon">🔁</span>
+          <h3>No reorder history</h3>
+          <p>Products from your completed orders will appear here for quick reordering.</p>
+          <a href="{% url 'product_list' %}" class="btn btn-primary">Place Your First Order</a>
+        </div>
+      {% endif %}
+    </section>
+
+    <!-- ══════════════════════════════
+         SECTION: SETTINGS
+    ══════════════════════════════ -->
+    <section class="dash-section" id="section-settings">
+      <div class="section-hd">
+        <h2>Account Settings</h2>
+        <p>Manage your profile, address and preferences.</p>
+      </div>
+
+      <div class="settings-layout">
+        <div class="settings-main">
+          <form method="post" action="{% url 'update_buyer_profile' %}" enctype="multipart/form-data" class="settings-form">
+            {% csrf_token %}
+
+            <!-- Profile -->
+            <div class="form-section">
+              <div class="fs-header">
+                <span class="fs-num">01</span>
+                <div><h3>Personal Details</h3><p>Your public-facing buyer profile.</p></div>
+              </div>
+              <div class="fs-body">
+                <div class="logo-upload-row">
+                  <div class="lu-current">
+                    {% if buyer.avatar %}
+                      <img src="{{ buyer.avatar.url }}" alt="Avatar" class="lu-img">
+                    {% else %}
+                      <div class="lu-placeholder" style="font-size:1.2rem; font-weight:700; color:var(--clay);">
+                        {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
+                      </div>
+                    {% endif %}
+                  </div>
+                  <div class="lu-controls">
+                    <label for="buyer_avatar" class="btn btn-outline btn-sm">Upload Photo</label>
+                    <input type="file" id="buyer_avatar" name="avatar" accept="image/*" class="file-input-hidden">
+                    <span class="form-hint">JPG or PNG, max 2MB</span>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="first_name">First Name</label>
+                    <input type="text" id="first_name" name="first_name" value="{{ request.user.first_name }}">
+                  </div>
+                  <div class="form-group">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" value="{{ request.user.last_name }}">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" value="{{ request.user.email }}">
+                  </div>
+                  <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <div class="input-prefix">
+                      <span>+91</span>
+                      <input type="tel" id="phone" name="phone" value="{{ buyer.phone|default:'' }}" maxlength="10">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="company">Company / Organisation <span class="hint">Optional</span></label>
+                  <input type="text" id="company" name="company" value="{{ buyer.company|default:'' }}" placeholder="e.g. Retail chain, NGO, Distributor">
+                </div>
+
+                <div class="form-group">
+                  <label for="gst">GST Number <span class="hint">Optional</span></label>
+                  <input type="text" id="gst" name="gst" value="{{ buyer.gst|default:'' }}" placeholder="15-character GSTIN" maxlength="15">
+                </div>
+              </div>
+            </div>
+
+            <!-- Delivery address -->
+            <div class="form-section">
+              <div class="fs-header">
+                <span class="fs-num">02</span>
+                <div><h3>Default Delivery Address</h3><p>Used as the default for all new orders.</p></div>
+              </div>
+              <div class="fs-body">
+                <div class="form-group">
+                  <label for="address_line1">Address Line 1</label>
+                  <input type="text" id="address_line1" name="address_line1" value="{{ buyer.address_line1|default:'' }}" placeholder="Building, Street">
+                </div>
+                <div class="form-group">
+                  <label for="address_line2">Address Line 2 <span class="hint">Optional</span></label>
+                  <input type="text" id="address_line2" name="address_line2" value="{{ buyer.address_line2|default:'' }}" placeholder="Area, Landmark">
+                </div>
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label for="city">City</label>
+                    <input type="text" id="city" name="city" value="{{ buyer.city|default:'' }}">
+                  </div>
+                  <div class="form-group">
+                    <label for="buyer_state">State</label>
+                    <select id="buyer_state" name="state">
+                      <option value="">— Select —</option>
+                      {% for code, sname in states %}
+                        <option value="{{ code }}" {% if buyer.state == code %}selected{% endif %}>{{ sname }}</option>
+                      {% empty %}
+                        <option value="RJ">Rajasthan</option>
+                        <option value="MH">Maharashtra</option>
+                        <option value="UP">Uttar Pradesh</option>
+                        <option value="DL">Delhi</option>
+                        <option value="GJ">Gujarat</option>
+                        <option value="KA">Karnataka</option>
+                        <option value="TN">Tamil Nadu</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="pin_code">PIN Code</label>
+                    <input type="text" id="pin_code" name="pin_code" value="{{ buyer.pin_code|default:'' }}" maxlength="6" placeholder="6-digit PIN">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preferences -->
+            <div class="form-section">
+              <div class="fs-header">
+                <span class="fs-num">03</span>
+                <div><h3>Preferences</h3><p>Customise your marketplace experience.</p></div>
+              </div>
+              <div class="fs-body">
+                <div class="toggle-row">
+                  <div>
+                    <strong>Order confirmation emails</strong>
+                    <p>Receive email alerts for every new order placed.</p>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" name="email_orders" {% if buyer.email_orders %}checked{% endif %}>
+                    <span class="toggle-track"></span>
+                  </label>
+                </div>
+                <div class="toggle-row">
+                  <div>
+                    <strong>AI recommendation emails</strong>
+                    <p>Get weekly personalised product picks in your inbox.</p>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" name="email_recommendations" {% if buyer.email_recommendations %}checked{% endif %}>
+                    <span class="toggle-track"></span>
+                  </label>
+                </div>
+                <div class="toggle-row">
+                  <div>
+                    <strong>Price drop alerts</strong>
+                    <p>Be notified when a wishlisted product drops in price.</p>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" name="price_alerts" {% if buyer.price_alerts %}checked{% endif %}>
+                    <span class="toggle-track"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="ap-submit-row">
+              <button type="reset" class="btn btn-outline btn-lg">Reset</button>
+              <button type="submit" class="btn btn-primary btn-lg">Save Changes →</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Settings sidebar -->
+        <aside class="settings-sidebar">
+          <div class="tip-card">
+            <h4>👤 Account Summary</h4>
+            <div class="account-info">
+              <div class="ai-row"><span>Member Since</span><strong>{{ request.user.date_joined|date:"M Y" }}</strong></div>
+              <div class="ai-row"><span>Orders Placed</span><strong>{{ total_orders|default:0 }}</strong></div>
+              <div class="ai-row"><span>SHGs Supported</span><strong>{{ shgs_supported|default:0 }}</strong></div>
+              <div class="ai-row"><span>Total Spent</span><strong>₹{{ total_spent|default:0 }}</strong></div>
+            </div>
+          </div>
+
+          <div class="tip-card tip-card-forecast">
+            <h4>🌱 Your Impact</h4>
+            <p>By buying from SahayogBazaar, you've directly supported grassroots SHGs across India.</p>
+            <div class="forecast-mini" style="margin-top:12px;">
+              <div class="fm-row">
+                <span>Women Employed</span>
+                <span class="fm-val trend-up">~{{ women_supported|default:"0" }}</span>
+              </div>
+              <div class="fm-row">
+                <span>Rural Households</span>
+                <span class="fm-val trend-up">~{{ households_impacted|default:"0" }}</span>
+              </div>
+            </div>
+          </div>
+
+          <a href="{% url 'password_reset' %}" class="btn btn-outline btn-full">Change Password</a>
+        </aside>
+      </div>
+    </section>
+
+  </div><!-- end .dash-main -->
+</div><!-- end .dash-root -->
+
+<!-- Chart data stored in data attributes — avoids Django tags inside <script> -->
+<div id="chartData"
+  data-spending="{{ monthly_spending|default:'[0,0,0,0,0,0,0,0,0,0,0,0]' }}"
+  data-category="{{ category_spending_data|default:'[40,25,20,15]' }}"
+  data-category-names="{{ category_spending_labels_str|default:'Textiles|Food|Handicrafts|Other' }}"
+  hidden>
+</div>
+
+
+<script>
+/* ── Sidebar toggle (mobile) ── */
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+  document.getElementById('dashSidebar').classList.toggle('sidebar-open');
+});
+
+/* ── Section navigation ── */
+function showSection(name) {
+  document.querySelectorAll('.dash-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.snav-link').forEach(l => l.classList.remove('active'));
+  const sec = document.getElementById('section-' + name);
+  if (sec) sec.classList.add('active');
+  document.querySelectorAll('[data-section="' + name + '"]').forEach(l => l.classList.add('active'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.querySelectorAll('[data-section]').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    showSection(link.dataset.section);
+  });
+});
+
+/* ── Apply data-width bars ── */
+document.querySelectorAll('[data-width]').forEach(el => {
+  el.style.width = (el.dataset.width || 0) + '%';
+});
+
+/* ── Charts ── */
+function loadCharts() {
+  if (typeof Chart === 'undefined') return;
+
+  const cd = document.getElementById('chartData');
+  const monthLabels  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const spendingData = JSON.parse(cd.dataset.spending);
+  const catData      = JSON.parse(cd.dataset.category);
+  const catLabels    = cd.dataset.categoryNames
+                         ? cd.dataset.categoryNames.split('|')
+                         : ['Textiles','Food','Handicrafts','Other'];
+
+  const baseOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#7A6555' } },
+      y: { grid: { color: 'rgba(224,213,197,.5)' }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#7A6555' } }
+    }
+  };
+
+  /* Spending overview (overview section) */
+  const sc = document.getElementById('spendingChart');
+  if (sc) new Chart(sc, {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        data: spendingData,
+        backgroundColor: 'rgba(196,98,45,.18)',
+        borderColor: '#C4622D',
+        borderWidth: 2,
+        borderRadius: 6,
+        hoverBackgroundColor: 'rgba(196,98,45,.35)'
+      }]
+    },
+    options: baseOpts
+  });
+
+  /* Spending trend (analytics section) */
+  const stc = document.getElementById('spendingTrendChart');
+  if (stc) new Chart(stc, {
+    type: 'line',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        data: spendingData,
+        borderColor: '#C4622D',
+        backgroundColor: 'rgba(196,98,45,.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#C4622D',
+        pointRadius: 4,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: baseOpts
+  });
+
+  /* Category donut */
+  const bcc = document.getElementById('buyerCategoryChart');
+  if (bcc) new Chart(bcc, {
+    type: 'doughnut',
+    data: {
+      labels: catLabels,
+      datasets: [{
+        data: catData,
+        backgroundColor: ['#C4622D','#D4A228','#3A7D44','#E8835A'],
+        borderWidth: 0,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'DM Sans', size: 11 }, color: '#4A3B2A', padding: 16 }
+        }
+      }
+    }
+  });
+}
+
+const chartScript = document.createElement('script');
+chartScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+chartScript.onload = loadCharts;
+document.head.appendChild(chartScript);
+</script>
+
+{% endblock %}

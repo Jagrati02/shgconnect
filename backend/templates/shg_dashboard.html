@@ -1,0 +1,1012 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard — {{ shg.name }} — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<div class="dash-root">
+
+  <!-- ══════════════════════════════
+       SIDEBAR
+  ══════════════════════════════ -->
+  <aside class="dash-sidebar" id="dashSidebar">
+
+    <!-- SHG identity -->
+    <div class="sidebar-profile">
+      <div class="sp-avatar">
+        {% if shg.logo %}
+          <img src="{{ shg.logo.url }}" alt="{{ shg.name }}">
+        {% else %}
+          <span>⬡</span>
+        {% endif %}
+      </div>
+      <div class="sp-info">
+        <strong>{{ shg.name }}</strong>
+        <span>{{ shg.district }}, {{ shg.state }}</span>
+      </div>
+      <div class="sp-badge
+        {% if shg.verified %}sp-verified{% else %}sp-unverified{% endif %}">
+        {% if shg.verified %}✓ Verified{% else %}Pending{% endif %}
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <span class="snav-group-label">Overview</span>
+      <a href="#overview"   class="snav-link active" data-section="overview">
+        <span class="snav-icon">🏠</span> Dashboard
+      </a>
+      <a href="#analytics"  class="snav-link" data-section="analytics">
+        <span class="snav-icon">📊</span> Analytics
+      </a>
+      <a href="#forecast"   class="snav-link" data-section="forecast">
+        <span class="snav-icon">🔮</span> AI Forecast
+      </a>
+
+      <span class="snav-group-label">Products</span>
+      <a href="{% url 'product_list' %}" class="snav-link">
+        <span class="snav-icon">🛒</span> Marketplace
+      </a>
+      <a href="{% url 'add_product' %}"  class="snav-link">
+        <span class="snav-icon">➕</span> Add Product
+      </a>
+      <a href="#products"   class="snav-link" data-section="products">
+        <span class="snav-icon">📦</span> My Products
+        {% if product_count %}<span class="snav-badge">{{ product_count }}</span>{% endif %}
+      </a>
+
+      <span class="snav-group-label">Orders</span>
+      <a href="#orders"     class="snav-link" data-section="orders">
+        <span class="snav-icon">📋</span> Orders
+        {% if pending_count %}<span class="snav-badge snav-badge-alert">{{ pending_count }}</span>{% endif %}
+      </a>
+      <a href="#cluster"    class="snav-link" data-section="cluster">
+        <span class="snav-icon">🧩</span> Cluster Network
+      </a>
+
+      <span class="snav-group-label">Account</span>
+      <a href="#settings"   class="snav-link" data-section="settings">
+        <span class="snav-icon">⚙️</span> SHG Settings
+      </a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="snav-link snav-logout">
+          <span class="snav-icon">↩</span> Logout
+        </button>
+      </form>
+    </nav>
+
+  </aside>
+
+  <!-- ══════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════ -->
+  <div class="dash-main">
+
+    <!-- Top bar -->
+    <div class="dash-topbar">
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+      <div class="dt-left">
+        <h2 class="dt-greeting">
+          Good {{ time_of_day|default:"day" }}, <em>{{ request.user.first_name|default:shg.name }}</em> 👋
+        </h2>
+        <span class="dt-date">{{ today|date:"l, d F Y" }}</span>
+      </div>
+      <div class="dt-right">
+        <a href="{% url 'add_product' %}" class="btn btn-primary btn-sm">+ Add Product</a>
+        <div class="dt-notif" id="notifBtn" title="Notifications">
+          🔔
+          {% if notif_count %}<span class="notif-dot">{{ notif_count }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: OVERVIEW ── -->
+    <section class="dash-section active" id="section-overview">
+
+      <!-- KPI cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-revenue">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Revenue</span>
+            <span class="kpi-value">₹{{ total_revenue|default:"0" }}</span>
+            <span class="kpi-delta kpi-up">↑ {{ revenue_growth|default:"0" }}% vs last month</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-orders">
+          <div class="kpi-icon">📦</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Orders</span>
+            <span class="kpi-value">{{ total_orders|default:"0" }}</span>
+            <span class="kpi-delta kpi-up">↑ {{ order_growth|default:"0" }}% this month</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-products">
+          <div class="kpi-icon">🧺</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Active Products</span>
+            <span class="kpi-value">{{ product_count|default:"0" }}</span>
+            <span class="kpi-delta kpi-neutral">{{ draft_count|default:"0" }} drafts</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-cluster">
+          <div class="kpi-icon">🧩</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Cluster Orders</span>
+            <span class="kpi-value">{{ cluster_orders|default:"0" }}</span>
+            <span class="kpi-delta kpi-up">{{ cluster_revenue_pct|default:"0" }}% of revenue</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-rating">
+          <div class="kpi-icon">⭐</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Avg Rating</span>
+            <span class="kpi-value">{{ avg_rating|default:"—" }}</span>
+            <span class="kpi-delta kpi-neutral">{{ review_count|default:"0" }} reviews</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two-col: chart + quick actions -->
+      <div class="dash-row-2">
+
+        <!-- Revenue chart -->
+        <div class="dash-card dash-card-lg">
+          <div class="dc-header">
+            <h3>Revenue This Year</h3>
+            <div class="dc-tabs">
+              <button class="dc-tab active" data-range="monthly">Monthly</button>
+              <button class="dc-tab" data-range="weekly">Weekly</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="revenueChart" height="220"></canvas>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="dash-card">
+          <div class="dc-header"><h3>Quick Actions</h3></div>
+          <div class="quick-actions">
+            <a href="{% url 'add_product' %}" class="qa-item">
+              <span class="qa-icon">➕</span>
+              <span>Add Product</span>
+            </a>
+            <a href="{% url 'my_orders' %}" class="qa-item">
+              <span class="qa-icon">📋</span>
+              <span>View Orders</span>
+            </a>
+            <a href="#forecast" class="qa-item snav-trigger" data-section="forecast">
+              <span class="qa-icon">🔮</span>
+              <span>AI Forecast</span>
+            </a>
+            <a href="#cluster" class="qa-item snav-trigger" data-section="cluster">
+              <span class="qa-icon">🧩</span>
+              <span>Cluster Network</span>
+            </a>
+            <a href="#settings" class="qa-item snav-trigger" data-section="settings">
+              <span class="qa-icon">⚙️</span>
+              <span>SHG Settings</span>
+            </a>
+            <a href="{% url 'product_list' %}" class="qa-item">
+              <span class="qa-icon">🛒</span>
+              <span>Marketplace</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Two-col: recent orders + top products -->
+      <div class="dash-row-2">
+
+        <!-- Recent orders -->
+        <div class="dash-card">
+          <div class="dc-header">
+            <h3>Recent Orders</h3>
+            <a href="{% url 'my_orders' %}" class="dc-link">View All →</a>
+          </div>
+          {% if recent_orders %}
+            <div class="mini-orders">
+              {% for order in recent_orders %}
+                <div class="mo-row">
+                  <div class="mo-thumb">
+                    {% if order.product.images.first %}
+                      <img src="{{ order.product.images.first.image.url }}" alt="">
+                    {% else %}
+                      <span>🧺</span>
+                    {% endif %}
+                  </div>
+                  <div class="mo-info">
+                    <strong>{{ order.product.name }}</strong>
+                    <span>{{ order.quantity }} units · {{ order.order.order_date|date:"d M"|date:"d M" }}</span>
+                  </div>
+                  <div class="mo-right">
+                    <span class="status-pill status-{{ order.order.order_status|lower|lower }}">{{ order.order.order_status|lower|title }}</span>
+                    <span class="mo-amount">₹{{ order.total_amount }}</span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="dc-empty"><span>📋</span><p>No orders yet</p></div>
+          {% endif %}
+        </div>
+
+        <!-- Top products -->
+        <div class="dash-card">
+          <div class="dc-header">
+            <h3>Top Products</h3>
+            <a href="#products" class="dc-link snav-trigger" data-section="products">Manage →</a>
+          </div>
+          {% if top_products %}
+            <div class="top-products-list">
+              {% for product in top_products %}
+                <div class="tp-row">
+                  <span class="tp-rank">{{ forloop.counter }}</span>
+                  <div class="tp-info">
+                    <strong>{{ product.name }}</strong>
+                    <span>{{ product.total_orders|default:0 }} orders</span>
+                  </div>
+                  <div class="tp-bar-wrap">
+                    <div class="tp-bar"
+                      data-width="{{ product.sales_pct|default:50 }}"></div>
+                  </div>
+                  <span class="tp-revenue">₹{{ product.revenue|default:0 }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="dc-empty"><span>🧺</span><p>No products listed yet</p></div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- Alerts / notifications -->
+      {% if alerts %}
+      <div class="dash-card">
+        <div class="dc-header"><h3>🔔 Alerts</h3></div>
+        <div class="alerts-list">
+          {% for alert in alerts %}
+            <div class="alert-item alert-{{ alert.type }}">
+              <span class="ai-icon">{{ alert.icon }}</span>
+              <div class="ai-body">
+                <strong>{{ alert.title }}</strong>
+                <p>{{ alert.message }}</p>
+              </div>
+              <span class="ai-time">{{ alert.created_at|timesince }} ago</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </section>
+
+    <!-- ── SECTION: ANALYTICS ── -->
+    <section class="dash-section" id="section-analytics">
+      <div class="section-hd">
+        <h2>Analytics</h2>
+        <p>Sales performance and buyer behaviour insights.</p>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon">👁️</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Product Views</span>
+            <span class="kpi-value">{{ total_views|default:"0" }}</span>
+            <span class="kpi-delta kpi-up">↑ {{ view_growth|default:0 }}%</span>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🔄</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Conversion Rate</span>
+            <span class="kpi-value">{{ conversion_rate|default:"0" }}%</span>
+            <span class="kpi-delta kpi-neutral">Views → Orders</span>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">📦</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Avg Order Value</span>
+            <span class="kpi-value">₹{{ avg_order_value|default:"0" }}</span>
+            <span class="kpi-delta kpi-up">↑ {{ aov_growth|default:0 }}%</span>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🔁</div>
+          <div class="kpi-body">
+            <span class="kpi-label">Repeat Buyers</span>
+            <span class="kpi-value">{{ repeat_buyers|default:"0" }}</span>
+            <span class="kpi-delta kpi-neutral">{{ repeat_pct|default:0 }}% of total</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-row-2">
+        <div class="dash-card dash-card-lg">
+          <div class="dc-header"><h3>Orders by Month</h3></div>
+          <div class="chart-wrap">
+            <canvas id="ordersChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-header"><h3>Sales by Category</h3></div>
+          <div class="chart-wrap chart-wrap-donut">
+            <canvas id="categoryChart" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── SECTION: AI FORECAST ── -->
+    <section class="dash-section" id="section-forecast">
+      <div class="section-hd">
+        <h2>AI Demand Forecast</h2>
+        <p>ML-powered predictions to help you plan production smarter.</p>
+      </div>
+
+      <!-- Forecast summary -->
+      <div class="forecast-cards-grid">
+        {% for product in forecast_products %}
+          <div class="forecast-card">
+            <div class="fc-top">
+              <div class="fc-product-name">{{ product.name }}</div>
+              <span class="fc-trend
+                {% if product.forecast_direction == 'up' %}fc-up
+                {% elif product.forecast_direction == 'down' %}fc-down
+                {% else %}fc-stable{% endif %}">
+                {% if product.forecast_direction == 'up' %}↑ Rising
+                {% elif product.forecast_direction == 'down' %}↓ Falling
+                {% else %}→ Stable{% endif %}
+              </span>
+            </div>
+
+            <div class="fc-demand-row">
+              <span class="fc-label">30-day Demand Score</span>
+              <span class="fc-score">{{ product.demand_score|default:0 }}%</span>
+            </div>
+            <div class="fc-bar-wrap">
+              <div class="fc-bar" data-width="{{ product.demand_score|default:0 }}"></div>
+            </div>
+
+            <div class="fc-metrics">
+              <div class="fc-metric">
+                <span>Predicted Orders</span>
+                <strong>{{ product.predicted_orders|default:"—" }}</strong>
+              </div>
+              <div class="fc-metric">
+                <span>Suggested Stock</span>
+                <strong>{{ product.suggested_stock|default:"—" }}</strong>
+              </div>
+              <div class="fc-metric">
+                <span>Peak Period</span>
+                <strong>{{ product.peak_period|default:"—" }}</strong>
+              </div>
+            </div>
+
+            <a href="{% url 'edit_product' product.pk %}" class="btn btn-outline btn-sm" style="margin-top:4px">
+              Update Stock →
+            </a>
+          </div>
+        {% empty %}
+          <div class="dc-empty" style="grid-column:1/-1; padding:60px;">
+            <span>🔮</span>
+            <p>Add products and enable forecasting to see AI predictions here.</p>
+            <a href="{% url 'add_product' %}" class="btn btn-primary" style="margin-top:14px">Add a Product</a>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Market signals -->
+      <div class="dash-card" style="margin-top:24px;">
+        <div class="dc-header">
+          <h3>🌐 Market Signals</h3>
+          <span class="dc-updated">Updated today</span>
+        </div>
+        <div class="market-signals">
+          {% for signal in market_signals %}
+            <div class="ms-item">
+              <span class="ms-icon">{{ signal.icon|default:"📈" }}</span>
+              <div class="ms-body">
+                <strong>{{ signal.title }}</strong>
+                <p>{{ signal.description }}</p>
+              </div>
+              <span class="ms-tag ms-{{ signal.type }}">{{ signal.type|title }}</span>
+            </div>
+          {% empty %}
+            <div class="ms-item">
+              <span class="ms-icon">🌾</span>
+              <div class="ms-body">
+                <strong>Organic food products trending</strong>
+                <p>Buyer demand for organic pickles and oils is up 34% this month.</p>
+              </div>
+              <span class="ms-tag ms-opportunity">Opportunity</span>
+            </div>
+            <div class="ms-item">
+              <span class="ms-icon">🎉</span>
+              <div class="ms-body">
+                <strong>Festive season approaching</strong>
+                <p>Handicraft and textile orders typically spike 60% in Oct–Dec.</p>
+              </div>
+              <span class="ms-tag ms-opportunity">Opportunity</span>
+            </div>
+            <div class="ms-item">
+              <span class="ms-icon">⚠️</span>
+              <div class="ms-body">
+                <strong>Low stock on 2 products</strong>
+                <p>You may miss orders if stock isn't replenished within 10 days.</p>
+              </div>
+              <span class="ms-tag ms-warning">Warning</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── SECTION: MY PRODUCTS ── -->
+    <section class="dash-section" id="section-products">
+      <div class="section-hd">
+        <h2>My Products</h2>
+        <p>Manage all your listed products.</p>
+      </div>
+
+      <div class="dp-toolbar">
+        <div class="search-wrap" style="max-width:320px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="productSearch" class="search-input" placeholder="Search products…">
+        </div>
+        <a href="{% url 'add_product' %}" class="btn btn-primary btn-sm">+ Add Product</a>
+      </div>
+
+      {% if my_products %}
+        <div class="dp-table-wrap">
+          <table class="dp-table" id="productsTable">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Orders</th>
+                <th>Demand</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for product in my_products %}
+                <tr class="dpt-row">
+                  <td>
+                    <div class="dpt-product">
+                      {% if product.images.first %}
+                        <img src="{{ product.images.first.image.url }}" alt="" class="dpt-thumb">
+                      {% else %}
+                        <div class="dpt-thumb-ph">🧺</div>
+                      {% endif %}
+                      <div>
+                        <strong>{{ product.name }}</strong>
+                        <span>Listed {{ product.created_at|date:"d M Y" }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="dpt-cat">{{ product.category }}</span></td>
+                  <td class="dpt-price">₹{{ product.price_per_unit }}<small>/{{ product.unit|default:"unit" }}</small></td>
+                  <td>
+                    <span class="dpt-stock
+                      {% if product.available_stock > 200 %}stock-ok
+                      {% elif product.available_stock > 50 %}stock-warn
+                      {% else %}stock-low{% endif %}">
+                      {{ product.available_stock|default:0 }}
+                    </span>
+                  </td>
+                  <td class="dpt-orders">{{ product.total_orders|default:0 }}</td>
+                  <td>
+                    <div class="dpt-demand-wrap">
+                      <div class="dpt-demand-bar">
+                        <div class="dpt-demand-fill"
+                          data-width="{{ product.demand_score|default:0 }}"></div>
+                      </div>
+                      <span>{{ product.demand_score|default:0 }}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-pill
+                      {% if product.status == 'published' %}status-delivered
+                      {% elif product.status == 'draft' %}status-pending
+                      {% else %}status-confirmed{% endif %}">
+                      {{ product.status|title }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="dpt-actions">
+                      <a href="{% url 'product_detail' product.pk %}" class="dpt-btn" title="View">👁</a>
+                      <a href="{% url 'edit_product' product.pk %}"   class="dpt-btn" title="Edit">✏️</a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="dc-empty" style="padding:60px">
+          <span>🧺</span>
+          <p>You haven't listed any products yet.</p>
+          <a href="{% url 'add_product' %}" class="btn btn-primary" style="margin-top:14px">List Your First Product</a>
+        </div>
+      {% endif %}
+
+    </section>
+
+    <!-- ── SECTION: ORDERS ── -->
+    <section class="dash-section" id="section-orders">
+      <div class="section-hd">
+        <h2>Orders</h2>
+        <p>Track and manage all incoming orders.</p>
+      </div>
+
+      <!-- Order status tabs -->
+      <div class="order-tabs" style="margin-bottom:24px;">
+        <button class="otab active" data-tab="all">All</button>
+        <button class="otab" data-tab="pending">Pending</button>
+        <button class="otab" data-tab="confirmed">Confirmed</button>
+        <button class="otab" data-tab="shipped">In Transit</button>
+        <button class="otab" data-tab="delivered">Delivered</button>
+      </div>
+
+      {% if dashboard_orders %}
+        <div class="dp-table-wrap">
+          <table class="dp-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Product</th>
+                <th>Buyer</th>
+                <th>Qty</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in dashboard_orders %}
+                <tr class="dpt-row order-row" data-status="{{ order.order.order_status|lower|lower }}">
+                  <td><span class="dpt-id">#{{ order.order_id|default:order.pk }}</span></td>
+                  <td>
+                    <div class="dpt-product" style="gap:8px;">
+                      <span style="font-size:1.1rem">🧺</span>
+                      <strong style="font-size:0.85rem">{{ order.product.name }}</strong>
+                    </div>
+                  </td>
+                  <td class="dpt-buyer">{{ order.buyer.get_full_name|default:order.buyer.username }}</td>
+                  <td>{{ order.quantity }}</td>
+                  <td class="dpt-price">₹{{ order.total_amount }}</td>
+                  <td class="dpt-date">{{ order.order.order_date|date:"d M"|date:"d M Y" }}</td>
+                  <td><span class="status-pill status-{{ order.order.order_status|lower|lower }}">{{ order.order.order_status|lower|title }}</span></td>
+                  <td>
+                    <a href="{% url 'order_detail' order.pk %}" class="dpt-btn" title="View">👁</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="dc-empty" style="padding:60px">
+          <span>📋</span>
+          <p>No orders received yet. Your orders will appear here once buyers start purchasing.</p>
+        </div>
+      {% endif %}
+
+    </section>
+
+    <!-- ── SECTION: CLUSTER NETWORK ── -->
+    <section class="dash-section" id="section-cluster">
+      <div class="section-hd">
+        <h2>Cluster Network</h2>
+        <p>Your SHG's position in the ML-matched cluster ecosystem.</p>
+      </div>
+
+      <!-- Cluster overview -->
+      <div class="cluster-overview-grid">
+        <div class="co-card co-card-main">
+          <div class="co-shg-node">
+            <div class="con-center">
+              <span class="con-icon">⬡</span>
+              <strong>{{ shg.name }}</strong>
+              <span>Your SHG</span>
+            </div>
+            {% if cluster_members %}
+              {% for member in cluster_members %}
+                <div class="con-satellite con-s{{ forloop.counter }}">
+                  <span>⬡</span>
+                  <small>{{ member.name|truncatechars:14 }}</small>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="con-satellite con-s1"><span>⬡</span><small>SHG Partner 1</small></div>
+              <div class="con-satellite con-s2"><span>⬡</span><small>SHG Partner 2</small></div>
+              <div class="con-satellite con-s3"><span>⬡</span><small>SHG Partner 3</small></div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="co-stats">
+          <div class="co-stat-card">
+            <span class="cos-icon">🧩</span>
+            <span class="cos-num">{{ cluster_size|default:"4" }}</span>
+            <span class="cos-label">SHGs in Your Cluster</span>
+          </div>
+          <div class="co-stat-card">
+            <span class="cos-icon">📦</span>
+            <span class="cos-num">{{ cluster_capacity|default:"18,000" }}</span>
+            <span class="cos-label">Combined Capacity</span>
+          </div>
+          <div class="co-stat-card">
+            <span class="cos-icon">💰</span>
+            <span class="cos-num">₹{{ cluster_revenue|default:"0" }}</span>
+            <span class="cos-label">Cluster Revenue (30d)</span>
+          </div>
+          <div class="co-stat-card">
+            <span class="cos-icon">🎯</span>
+            <span class="cos-num">{{ cluster_match_score|default:"87" }}%</span>
+            <span class="cos-label">ML Match Score</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cluster members table -->
+      <div class="dash-card" style="margin-top:24px;">
+        <div class="dc-header"><h3>Cluster Members</h3></div>
+        <div class="cluster-members-list">
+          {% for member in cluster_members %}
+            <div class="cm-row">
+              <div class="cm-avatar">⬡</div>
+              <div class="cm-info">
+                <strong>{{ member.name }}</strong>
+                <span>{{ member.district }}, {{ member.state }}</span>
+              </div>
+              <div class="cm-products">
+                <span>{{ member.shared_products|default:1 }} shared product{{ member.shared_products|default:1|pluralize }}</span>
+              </div>
+              <div class="cm-capacity">
+                <span class="cm-cap-label">Capacity</span>
+                <strong>{{ member.capacity|default:"—" }} units</strong>
+              </div>
+              <span class="status-pill status-delivered" style="font-size:0.72rem;">Active</span>
+            </div>
+          {% empty %}
+            <div class="cm-row">
+              <div class="cm-avatar">⬡</div>
+              <div class="cm-info"><strong>Mahila Udyog SHG</strong><span>Jaipur, Rajasthan</span></div>
+              <div class="cm-products"><span>2 shared products</span></div>
+              <div class="cm-capacity"><span class="cm-cap-label">Capacity</span><strong>4,000 units</strong></div>
+              <span class="status-pill status-delivered" style="font-size:0.72rem;">Active</span>
+            </div>
+            <div class="cm-row">
+              <div class="cm-avatar">⬡</div>
+              <div class="cm-info"><strong>Grameen Shakti SHG</strong><span>Ajmer, Rajasthan</span></div>
+              <div class="cm-products"><span>1 shared product</span></div>
+              <div class="cm-capacity"><span class="cm-cap-label">Capacity</span><strong>3,500 units</strong></div>
+              <span class="status-pill status-delivered" style="font-size:0.72rem;">Active</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── SECTION: SETTINGS ── -->
+    <section class="dash-section" id="section-settings">
+      <div class="section-hd">
+        <h2>SHG Settings</h2>
+        <p>Update your group's profile and account preferences.</p>
+      </div>
+
+      <div class="settings-layout">
+        <div class="settings-main">
+
+          <form method="post" action="{% url 'update_shg_profile' %}" enctype="multipart/form-data" class="settings-form">
+            {% csrf_token %}
+
+            <!-- Profile -->
+            <div class="form-section">
+              <div class="fs-header">
+                <span class="fs-num">01</span>
+                <div><h3>SHG Profile</h3><p>Public information visible to buyers.</p></div>
+              </div>
+              <div class="fs-body">
+
+                <!-- Logo upload -->
+                <div class="logo-upload-row">
+                  <div class="lu-current">
+                    {% if shg.logo %}
+                      <img src="{{ shg.logo.url }}" alt="SHG logo" class="lu-img">
+                    {% else %}
+                      <div class="lu-placeholder">⬡</div>
+                    {% endif %}
+                  </div>
+                  <div class="lu-controls">
+                    <label for="shg_logo" class="btn btn-outline btn-sm">Upload Logo</label>
+                    <input type="file" id="shg_logo" name="logo" accept="image/*" class="file-input-hidden">
+                    <span class="form-hint">PNG or JPG, square, min 200×200px</span>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="shg_name">SHG Name</label>
+                    <input type="text" id="shg_name" name="name" value="{{ shg.name }}">
+                  </div>
+                  <div class="form-group">
+                    <label for="shg_reg">Registration No.</label>
+                    <input type="text" id="shg_reg" name="reg_no" value="{{ shg.reg_no|default:'' }}" placeholder="Govt. registration number">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="shg_about">About the SHG</label>
+                  <textarea id="shg_about" name="about" rows="3" placeholder="Brief description for buyers…">{{ shg.about|default:'' }}</textarea>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="shg_district">District</label>
+                    <input type="text" id="shg_district" name="district" value="{{ shg.district|default:'' }}">
+                  </div>
+                  <div class="form-group">
+                    <label for="shg_pin">PIN Code</label>
+                    <input type="text" id="shg_pin" name="pin_code" value="{{ shg.pin_code|default:'' }}" maxlength="6" placeholder="6-digit PIN">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="shg_phone">Contact Number</label>
+                  <div class="input-prefix">
+                    <span>+91</span>
+                    <input type="tel" id="shg_phone" name="phone" value="{{ shg.phone|default:'' }}" maxlength="10" placeholder="9876543210">
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Bank details -->
+            <div class="form-section">
+              <div class="fs-header">
+                <span class="fs-num">02</span>
+                <div><h3>Bank Details</h3><p>For receiving payments from orders.</p></div>
+              </div>
+              <div class="fs-body">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="bank_name">Bank Name</label>
+                    <input type="text" id="bank_name" name="bank_name" value="{{ shg.bank_name|default:'' }}" placeholder="e.g. State Bank of India">
+                  </div>
+                  <div class="form-group">
+                    <label for="account_no">Account Number</label>
+                    <input type="text" id="account_no" name="account_no" value="{{ shg.account_no|default:'' }}" placeholder="Account number">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="ifsc">IFSC Code</label>
+                    <input type="text" id="ifsc" name="ifsc" value="{{ shg.ifsc|default:'' }}" placeholder="e.g. SBIN0001234" maxlength="11">
+                  </div>
+                  <div class="form-group">
+                    <label for="upi_id">UPI ID <span class="hint">Optional</span></label>
+                    <input type="text" id="upi_id" name="upi_id" value="{{ shg.upi_id|default:'' }}" placeholder="name@upi">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ap-submit-row">
+              <button type="reset" class="btn btn-outline btn-lg">Reset</button>
+              <button type="submit" class="btn btn-primary btn-lg">Save Changes →</button>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- Settings sidebar -->
+        <aside class="settings-sidebar">
+          <div class="tip-card">
+            <h4>🔒 Verification Status</h4>
+            {% if shg.verified %}
+              <div class="verify-status verify-ok">
+                <span>✅</span>
+                <div>
+                  <strong>Verified SHG</strong>
+                  <p>Your group is verified and trusted by buyers.</p>
+                </div>
+              </div>
+            {% else %}
+              <div class="verify-status verify-pending">
+                <span>⏳</span>
+                <div>
+                  <strong>Verification Pending</strong>
+                  <p>Submit your registration documents to get verified.</p>
+                  <a href="#" class="btn btn-primary btn-sm" style="margin-top:10px;">Submit Docs →</a>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="tip-card">
+            <h4>👤 Account</h4>
+            <div class="account-info">
+              <div class="ai-row"><span>Name</span><strong>{{ request.user.get_full_name }}</strong></div>
+              <div class="ai-row"><span>Email</span><strong>{{ request.user.email }}</strong></div>
+              <div class="ai-row"><span>Joined</span><strong>{{ request.user.date_joined|date:"M Y" }}</strong></div>
+            </div>
+            <a href="{% url 'password_reset' %}" class="btn btn-outline btn-sm btn-full" style="margin-top:14px;">Change Password</a>
+          </div>
+        </aside>
+
+      </div>
+    </section>
+
+  </div><!-- end .dash-main -->
+</div><!-- end .dash-root -->
+
+<!-- Chart data — Django values in data attributes, read by JS below -->
+<div id="chartData"
+  data-revenue="{{ monthly_revenue|default:'[0,0,0,0,0,0,0,0,0,0,0,0]' }}"
+  data-orders="{{ monthly_orders|default:'[0,0,0,0,0,0,0,0,0,0,0,0]' }}"
+  data-category="{{ category_data|default:'[40,25,20,15]' }}"
+  data-category-labels="{{ category_labels|default:'[0,1,2,3]' }}"
+  data-category-names="Textiles|Food|Handicrafts|Other"
+  hidden>
+</div>
+
+
+<script>
+/* ── Sidebar toggle (mobile) ── */
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+  document.getElementById('dashSidebar').classList.toggle('sidebar-open');
+});
+
+/* ── Section navigation ── */
+function showSection(name) {
+  document.querySelectorAll('.dash-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.snav-link').forEach(l => l.classList.remove('active'));
+  const sec = document.getElementById('section-' + name);
+  if (sec) sec.classList.add('active');
+  document.querySelectorAll('[data-section="' + name + '"]').forEach(l => l.classList.add('active'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.querySelectorAll('[data-section]').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    showSection(link.dataset.section);
+  });
+});
+
+/* ── Order tab filtering ── */
+document.querySelectorAll('.otab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.otab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const filter = tab.dataset.tab;
+    document.querySelectorAll('.order-row').forEach(row => {
+      row.style.display = filter === 'all' || row.dataset.status === filter ? '' : 'none';
+    });
+  });
+});
+
+/* ── Product search ── */
+const searchInput = document.getElementById('productSearch');
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase();
+    document.querySelectorAll('.dpt-row').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+
+/* ── Apply data-width to bars ── */
+document.querySelectorAll('[data-width]').forEach(el => {
+  el.style.width = (el.dataset.width || 0) + '%';
+});
+
+/* ── Revenue Chart (Chart.js via CDN) ── */
+function loadCharts() {
+  if (typeof Chart === 'undefined') return;
+
+  const cd = document.getElementById('chartData');
+  const monthLabels    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const revenueData    = JSON.parse(cd.dataset.revenue);
+  const ordersData     = JSON.parse(cd.dataset.orders);
+  const categoryData   = JSON.parse(cd.dataset.category);
+  const categoryLabels = cd.dataset.categoryNames
+                           ? cd.dataset.categoryNames.split('|')
+                           : ['Textiles','Food','Handicrafts','Other'];
+
+  const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#7A6555' } },
+      y: { grid: { color: 'rgba(224,213,197,.5)' }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#7A6555' } }
+    }
+  };
+
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        data: revenueData,
+        backgroundColor: 'rgba(196,98,45,.18)',
+        borderColor: '#C4622D',
+        borderWidth: 2,
+        borderRadius: 6,
+        hoverBackgroundColor: 'rgba(196,98,45,.35)'
+      }]
+    },
+    options: chartDefaults
+  });
+
+  new Chart(document.getElementById('ordersChart'), {
+    type: 'line',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        data: ordersData,
+        borderColor: '#C4622D',
+        backgroundColor: 'rgba(196,98,45,.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#C4622D',
+        pointRadius: 4,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: chartDefaults
+  });
+
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: categoryLabels,
+      datasets: [{
+        data: categoryData,
+        backgroundColor: ['#C4622D','#D4A228','#3A7D44','#E8835A'],
+        borderWidth: 0,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'DM Sans', size: 11 }, color: '#4A3B2A', padding: 16 }
+        }
+      }
+    }
+  });
+}
+
+/* Load Chart.js dynamically */
+const chartScript = document.createElement('script');
+chartScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+chartScript.onload = loadCharts;
+document.head.appendChild(chartScript);
+</script>
+
+{% endblock %}
