@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb-bar">
+  <div class="container breadcrumb-inner">
+    <a href="{% url 'home' %}">Home</a>
+    <span class="bc-sep">›</span>
+    <a href="{% url 'product_list' %}">Marketplace</a>
+    <span class="bc-sep">›</span>
+    <span class="bc-current">{{ product.name }}</span>
+  </div>
+</div>
+
+<div class="container pd-layout">
+
+  <!-- GALLERY -->
+  <div class="pd-gallery">
+    <div class="gallery-main">
+      {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="gallery-main-img">
+      {% else %}
+        <div class="gallery-placeholder"><span>🧺</span><p>No image available</p></div>
+      {% endif %}
+      <div class="gallery-badges">
+        {% if product.cluster_enabled %}<span class="badge badge-cluster">⬡ Cluster Ready</span>{% endif %}
+      </div>
+    </div>
+
+    <!-- SHG strip -->
+    <div class="shg-strip">
+      <div class="shg-strip-left">
+        <span class="shg-avatar">⬡</span>
+        <div>
+          <span class="shg-strip-name">{{ product.shg.shg_name }}</span>
+          <span class="shg-strip-loc">📍 {{ product.shg.location|default:product.shg.state }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCT INFO -->
+  <div class="pd-info">
+
+    <div class="pd-category">{{ product.category }}</div>
+    <h1 class="pd-title">{{ product.name }}</h1>
+
+    <!-- Price block -->
+    <div class="pd-price-block">
+      <div class="pd-price-row">
+        <span class="pd-price">₹{{ product.price }}</span>
+        <span class="pd-price-unit">per {{ product.unit|default:"unit" }}</span>
+        {% if product.bulk_price %}
+          <span class="pd-bulk-tag">Bulk: ₹{{ product.bulk_price }}/unit</span>
+        {% endif %}
+      </div>
+      <div class="pd-moq-row">
+        <span class="moq-label">Minimum Order:</span>
+        <strong>{{ product.min_order_qty|default:1 }} {{ product.unit|default:"units" }}</strong>
+      </div>
+      <div class="pd-stock
+        {% if product.quantity_available > 200 %}stock-high
+        {% elif product.quantity_available > 50 %}stock-mid
+        {% else %}stock-low{% endif %}">
+        {% if product.quantity_available > 200 %}✅ In Stock ({{ product.quantity_available }} available)
+        {% elif product.quantity_available > 0 %}⚠️ Low Stock — {{ product.quantity_available }} units left
+        {% else %}🔴 Out of Stock{% endif %}
+      </div>
+    </div>
+
+    <!-- ORDER FORM -->
+    <form method="post" action="{% url 'place_order' product.pk %}"
+          class="pd-order-form" id="orderForm"
+          data-price="{{ product.price }}"
+          data-min-qty="{{ product.min_order_qty|default:1 }}"
+          data-max-stock="{{ product.quantity_available }}">
+      {% csrf_token %}
+
+      <div class="order-qty-row">
+        <label for="quantity">Quantity</label>
+        <div class="qty-control">
+          <button type="button" class="qty-btn" id="qtyMinus">−</button>
+          <input type="number" id="quantity" name="quantity"
+            value="{{ product.min_order_qty|default:1 }}"
+            min="{{ product.min_order_qty|default:1 }}"
+            max="{{ product.quantity_available }}"
+            class="qty-input">
+          <button type="button" class="qty-btn" id="qtyPlus">+</button>
+        </div>
+        <span class="qty-unit">{{ product.unit|default:"units" }}</span>
+      </div>
+
+      <div class="order-total-preview">
+        <span>Estimated Total</span>
+        <strong id="orderTotal">₹{{ product.price }}</strong>
+      </div>
+
+      {% if user.is_authenticated %}
+        {% if user.buyerprofile %}
+          <button type="submit" class="btn btn-primary btn-full btn-lg">Place Bulk Order →</button>
+        {% else %}
+          <p style="color:var(--ink-soft); font-size:0.9rem; text-align:center;">
+            SHG members cannot order their own products.
+          </p>
+        {% endif %}
+      {% else %}
+        <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-full btn-lg">Log in to Order</a>
+        <a href="{% url 'signup' %}" class="btn btn-outline btn-full">Create Free Account</a>
+      {% endif %}
+    </form>
+
+    <!-- Trust badges -->
+    <div class="trust-row">
+      <div class="trust-item"><span>🔒</span> Secure Payment</div>
+      <div class="trust-item"><span>✅</span> Verified SHG</div>
+      <div class="trust-item"><span>🚚</span> Pan-India Delivery</div>
+      <div class="trust-item"><span>↩️</span> Easy Returns</div>
+    </div>
+
+    {% if product.lead_time_days %}
+    <div class="lead-time-info">
+      <span>🗓</span>
+      <span>Lead time: <strong>{{ product.lead_time_days }} days</strong> after order confirmation</span>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="pd-tabs-section">
+  <div class="container">
+    <div class="pd-tabs">
+      <button class="pd-tab active" data-tab="description">Description</button>
+      <button class="pd-tab" data-tab="specs">Specifications</button>
+      {% if reviews %}<button class="pd-tab" data-tab="reviews">Reviews <span class="tab-count">{{ reviews|length }}</span></button>{% endif %}
+    </div>
+
+    <!-- Description -->
+    <div class="pd-tab-panel active" id="tab-description">
+      <div class="tab-prose">{{ product.description|linebreaks }}</div>
+      {% if product.tags %}
+        <div class="tags-row">
+          {% for tag in product.tags.split ',' %}
+            <span class="tag-pill">{{ tag|strip }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Specifications -->
+    <div class="pd-tab-panel" id="tab-specs">
+      <div class="specs-table">
+        <div class="spec-row"><span class="spec-key">Category</span><span class="spec-val">{{ product.category|default:"—" }}</span></div>
+        <div class="spec-row"><span class="spec-key">Unit of Sale</span><span class="spec-val">{{ product.unit|default:"—" }}</span></div>
+        <div class="spec-row"><span class="spec-key">Min. Order Qty</span><span class="spec-val">{{ product.min_order_qty|default:"—" }}</span></div>
+        <div class="spec-row"><span class="spec-key">Available Stock</span><span class="spec-val">{{ product.quantity_available }}</span></div>
+        <div class="spec-row"><span class="spec-key">Lead Time</span><span class="spec-val">{{ product.lead_time_days|default:"—" }} days</span></div>
+        <div class="spec-row"><span class="spec-key">State of Origin</span><span class="spec-val">{{ product.shg.state|default:"—" }}</span></div>
+        <div class="spec-row"><span class="spec-key">SHG Name</span><span class="spec-val">{{ product.shg.shg_name }}</span></div>
+        <div class="spec-row"><span class="spec-key">Listed On</span><span class="spec-val">{{ product.created_at|date:"d M Y" }}</span></div>
+        {% if product.bulk_price %}
+        <div class="spec-row"><span class="spec-key">Bulk Price</span><span class="spec-val">₹{{ product.bulk_price }} / {{ product.unit|default:"unit" }}</span></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Reviews -->
+    {% if reviews %}
+    <div class="pd-tab-panel" id="tab-reviews">
+      <div class="reviews-list">
+        {% for review in reviews %}
+          <div class="review-card">
+            <div class="rc-header">
+              <div class="rc-avatar">{{ review.order.buyer.first_name|first|upper }}</div>
+              <div class="rc-meta">
+                <strong>{{ review.order.buyer.get_full_name }}</strong>
+                <span class="rc-date">{{ review.order.order_date|date:"d M Y" }}</span>
+              </div>
+              <div class="rc-stars">
+                {% for i in "12345" %}
+                  <span class="star {% if forloop.counter <= review.review_rating %}star-filled{% endif %}">★</span>
+                {% endfor %}
+              </div>
+            </div>
+            <p class="rc-body">{{ review.review_comment }}</p>
+            <span class="verified-badge">✅ Verified Purchase</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- RELATED PRODUCTS -->
+{% if related_products %}
+<section class="related-section">
+  <div class="container">
+    <div class="section-header" style="text-align:left; max-width:none; margin-bottom:28px;">
+      <span class="section-tag">More Like This</span>
+      <h2 class="section-title" style="font-size:1.6rem;">Related Products</h2>
+    </div>
+    <div class="related-grid">
+      {% for rp in related_products %}
+        <div class="product-card">
+          <div class="pc-image-wrap">
+            {% if rp.image %}
+              <img src="{{ rp.image.url }}" alt="{{ rp.name }}" class="pc-image" loading="lazy">
+            {% else %}
+              <div class="pc-image-placeholder"><span>🧺</span></div>
+            {% endif %}
+          </div>
+          <div class="pc-body">
+            <div class="pc-category">{{ rp.category }}</div>
+            <h3 class="pc-name"><a href="{% url 'product_detail' rp.pk %}">{{ rp.name }}</a></h3>
+            <div class="pc-shg"><span class="shg-dot">⬡</span>{{ rp.shg.shg_name }}</div>
+            <div class="pc-footer">
+              <div class="pc-pricing">
+                <span class="pc-price">₹{{ rp.price }}</span>
+                <span class="pc-unit">/ {{ rp.unit|default:"unit" }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="pc-actions">
+            <a href="{% url 'product_detail' rp.pk %}" class="btn btn-outline btn-sm">View</a>
+            <a href="{% url 'place_order' rp.pk %}" class="btn btn-primary btn-sm">Order</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<script>
+/* ── Tabs ── */
+document.querySelectorAll('.pd-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.pd-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.pd-tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* ── Qty control — reads from data attributes (no Django tags in JS) ── */
+const orderForm    = document.getElementById('orderForm');
+const qtyInput     = document.getElementById('quantity');
+const totalEl      = document.getElementById('orderTotal');
+const pricePerUnit = parseFloat(orderForm.dataset.price)    || 0;
+const minQty       = parseInt(orderForm.dataset.minQty)     || 1;
+const maxStock     = parseInt(orderForm.dataset.maxStock)   || 9999;
+
+function updateTotal() {
+  const qty   = parseInt(qtyInput.value) || minQty;
+  const total = (qty * pricePerUnit).toLocaleString('en-IN');
+  totalEl.textContent = '₹' + total;
+}
+
+document.getElementById('qtyMinus').addEventListener('click', () => {
+  const cur = parseInt(qtyInput.value);
+  if (cur - minQty >= minQty) { qtyInput.value = cur - minQty; updateTotal(); }
+});
+document.getElementById('qtyPlus').addEventListener('click', () => {
+  const cur = parseInt(qtyInput.value);
+  if (cur + minQty <= maxStock) { qtyInput.value = cur + minQty; updateTotal(); }
+});
+qtyInput.addEventListener('change', () => {
+  let v = parseInt(qtyInput.value);
+  if (v < minQty)  v = minQty;
+  if (v > maxStock) v = maxStock;
+  qtyInput.value = v;
+  updateTotal();
+});
+updateTotal();
+</script>
+
+{% endblock %}

@@ -1,14 +1,186 @@
-{% extends 'base/base.html' %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Marketplace — SahayogBazaar{% endblock %}
 
 {% block content %}
-<h2>Add Product</h2>
 
-<form method="POST">
-    {% csrf_token %}
-    <input type="text" name="name" class="form-control mb-2" placeholder="Product Name">
-    <input type="number" name="price" class="form-control mb-2" placeholder="Price">
-    <button class="btn btn-primary">Add</button>
-    <a href="{% url 'place_order' product.id %}" class="btn btn-success">Buy</a>
-</form>
+<!-- ── PAGE HEADER ── -->
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Marketplace</span>
+      <h1 class="ph-title">Explore SHG Products</h1>
+      <p class="ph-sub">Handcrafted goods from verified self-help groups across India — ready for bulk ordering.</p>
+    </div>
+    {% if user.is_authenticated %}
+      <a href="{% url 'add_product' %}" class="btn btn-primary">+ List Your Product</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── FILTERS BAR ── -->
+<div class="filters-bar">
+  <div class="container filters-inner">
+    <form method="get" action="" class="search-form">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" name="q" placeholder="Search products, SHGs, categories…"
+          value="{{ request.GET.q }}" class="search-input">
+      </div>
+
+      <select name="category" class="filter-select">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
+            {{ cat.name }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <select name="sort" class="filter-select">
+        <option value="">Sort By</option>
+        <option value="price_asc"  {% if request.GET.sort == 'price_asc'  %}selected{% endif %}>Price: Low → High</option>
+        <option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>Price: High → Low</option>
+        <option value="newest"     {% if request.GET.sort == 'newest'     %}selected{% endif %}>Newest First</option>
+      </select>
+
+      <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+      {% if request.GET.q or request.GET.category or request.GET.sort %}
+        <a href="{% url 'product_list' %}" class="btn btn-outline btn-sm">Clear ✕</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- ── MAIN CONTENT ── -->
+<div class="container pl-layout">
+
+  <div class="forecast-banner">
+    <div class="fb-left">
+      <span class="fb-icon">🔮</span>
+      <div>
+        <strong>AI Demand Insight</strong>
+        <p>Handwoven textiles & organic food products are trending <em>↑ 34%</em> this month.</p>
+      </div>
+    </div>
+    <a href="#" class="btn btn-ghost btn-sm">View Full Forecast →</a>
+  </div>
+
+  <div class="results-row">
+    <span class="results-count">
+      {% if products %}
+        Showing <strong>{{ products|length }}</strong> product{{ products|length|pluralize }}
+        {% if request.GET.q %} for "<em>{{ request.GET.q }}</em>"{% endif %}
+      {% else %}
+        No products found
+      {% endif %}
+    </span>
+    <div class="view-toggle">
+      <button class="view-btn active" id="gridViewBtn" title="Grid view">▦</button>
+      <button class="view-btn" id="listViewBtn" title="List view">☰</button>
+    </div>
+  </div>
+
+  {% if products %}
+    <div class="product-grid" id="productGrid">
+      {% for product in products %}
+        <div class="product-card">
+
+          <!-- Image wrap — badges and fav INSIDE this div -->
+          <div class="pc-image-wrap">
+            {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" class="pc-image">
+            {% else %}
+              <div class="pc-image-placeholder"><span>🧺</span></div>
+            {% endif %}
+
+            <div class="pc-badges">
+              {% if product.cluster_enabled %}<span class="badge badge-cluster">Cluster ✓</span>{% endif %}
+            </div>
+            <button class="pc-fav" title="Save for later">♡</button>
+          </div>
+
+          <!-- Info -->
+          <div class="pc-body">
+            <div class="pc-category">{{ product.category }}</div>
+            <h3 class="pc-name">
+              <a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a>
+            </h3>
+            <div class="pc-shg">
+              <span class="shg-dot">⬡</span>
+              {{ product.shg.shg_name }} · {{ product.shg.state }}
+            </div>
+
+            <div class="pc-footer">
+              <div class="pc-pricing">
+                <span class="pc-price">₹{{ product.price }}</span>
+                <span class="pc-unit">/ {{ product.unit|default:"unit" }}</span>
+              </div>
+              <div class="pc-moq">
+                Min. <strong>{{ product.min_order_qty|default:"1" }}</strong> units
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="pc-actions">
+            <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline btn-sm">View Details</a>
+            <a href="{% url 'place_order' product.pk %}" class="btn btn-primary btn-sm">Order Now</a>
+          </div>
+
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- PAGINATION -->
+    {% if products.has_other_pages %}
+      <nav class="pagination" aria-label="Product pages">
+        {% if products.has_previous %}
+          <a href="?page={{ products.previous_page_number }}&q={{ request.GET.q }}&category={{ request.GET.category }}&sort={{ request.GET.sort }}" class="page-btn">← Prev</a>
+        {% endif %}
+        {% for num in products.paginator.page_range %}
+          {% if products.number == num %}
+            <span class="page-btn page-current">{{ num }}</span>
+          {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+            <a href="?page={{ num }}&q={{ request.GET.q }}&category={{ request.GET.category }}&sort={{ request.GET.sort }}" class="page-btn">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if products.has_next %}
+          <a href="?page={{ products.next_page_number }}&q={{ request.GET.q }}&category={{ request.GET.category }}&sort={{ request.GET.sort }}" class="page-btn">Next →</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <span class="es-icon">🔎</span>
+      <h3>No products found</h3>
+      <p>Try adjusting your filters or search term.</p>
+      {% if user.is_authenticated %}
+        <a href="{% url 'add_product' %}" class="btn btn-primary">+ Add Your Product</a>
+      {% else %}
+        <a href="{% url 'signup' %}" class="btn btn-primary">Join & List Products</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+
+<script>
+  const grid = document.getElementById('productGrid');
+  if (grid) {
+    document.getElementById('gridViewBtn').addEventListener('click', function () {
+      grid.classList.remove('product-list-view');
+      this.classList.add('active');
+      document.getElementById('listViewBtn').classList.remove('active');
+    });
+    document.getElementById('listViewBtn').addEventListener('click', function () {
+      grid.classList.add('product-list-view');
+      this.classList.add('active');
+      document.getElementById('gridViewBtn').classList.remove('active');
+    });
+  }
+</script>
 
 {% endblock %}

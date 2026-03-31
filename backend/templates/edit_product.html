@@ -1,0 +1,586 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit — {{ product.name }} — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<!-- ── PAGE HEADER ── -->
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Dashboard</span>
+      <h1 class="ph-title">Edit Product</h1>
+      <p class="ph-sub">Update the details for <strong>{{ product.name }}</strong>.</p>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline btn-sm">View Listing →</a>
+      <a href="{% url 'product_list' %}" class="btn btn-outline btn-sm">← Marketplace</a>
+    </div>
+  </div>
+</div>
+
+<div class="container ap-layout">
+
+  <!-- ══════════════════════════════
+       FORM
+  ══════════════════════════════ -->
+  <div class="ap-main">
+    <form
+      method="post"
+      action="{% url 'edit_product' product.pk %}"
+      enctype="multipart/form-data"
+      class="ap-form"
+      id="editProductForm"
+      novalidate
+    >
+      {% csrf_token %}
+
+      <!-- ─ STATUS BANNER ─ -->
+      <div class="edit-status-bar
+        {% if product.status == 'published' %}esb-published
+        {% elif product.status == 'draft' %}esb-draft
+        {% else %}esb-review{% endif %}">
+        <div class="esb-left">
+          <span class="esb-dot"></span>
+          <span class="esb-label">
+            {% if product.status == 'published' %}Published — visible to buyers
+            {% elif product.status == 'draft' %}Draft — not visible to buyers
+            {% else %}Under Review{% endif %}
+          </span>
+        </div>
+        <div class="esb-right">
+          <span class="esb-meta">Listed on {{ product.created_at|date:"d M Y" }}</span>
+          {% if product.updated_at %}
+            <span class="esb-sep">·</span>
+            <span class="esb-meta">Last edited {{ product.updated_at|date:"d M Y" }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ─ SECTION 1: Basic Info ─ -->
+      <div class="form-section">
+        <div class="fs-header">
+          <span class="fs-num">01</span>
+          <div>
+            <h3>Product Information</h3>
+            <p>Update your product's name, category and description.</p>
+          </div>
+        </div>
+        <div class="fs-body">
+
+          <div class="form-group">
+            <label for="name">Product Name <span class="req">*</span></label>
+            <input
+              type="text" id="name" name="name"
+              placeholder="e.g. Handwoven Jute Bag"
+              value="{{ form.name.value|default:product.name }}"
+              required autofocus
+            >
+            {% if form.name.errors %}<span class="form-error">{{ form.name.errors.0 }}</span>{% endif %}
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="category">Category <span class="req">*</span></label>
+              <select id="category" name="category" required>
+                <option value="">— Select —</option>
+                {% for cat in categories %}
+                  <option value="{{ cat.pk }}"
+                    {% if form.category.value == cat.pk|stringformat:"s" or product.category.pk == cat.pk %}selected{% endif %}>
+                    {{ cat.name }}
+                  </option>
+                {% empty %}
+                  <option value="food"       {% if product.category == 'food' %}selected{% endif %}>Food & Pickles</option>
+                  <option value="textiles"   {% if product.category == 'textiles' %}selected{% endif %}>Textiles & Fabric</option>
+                  <option value="handicrafts"{% if product.category == 'handicrafts' %}selected{% endif %}>Handicrafts</option>
+                  <option value="agri"       {% if product.category == 'agri' %}selected{% endif %}>Agriculture</option>
+                  <option value="beauty"     {% if product.category == 'beauty' %}selected{% endif %}>Beauty & Wellness</option>
+                  <option value="paper"      {% if product.category == 'paper' %}selected{% endif %}>Paper Products</option>
+                {% endfor %}
+              </select>
+              {% if form.category.errors %}<span class="form-error">{{ form.category.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="unit">Unit of Sale <span class="req">*</span></label>
+              <select id="unit" name="unit" required>
+                <option value="">— Select —</option>
+                <option value="piece"  {% if product.unit == 'piece'  %}selected{% endif %}>Piece</option>
+                <option value="kg"     {% if product.unit == 'kg'     %}selected{% endif %}>Kilogram (kg)</option>
+                <option value="gram"   {% if product.unit == 'gram'   %}selected{% endif %}>Gram (g)</option>
+                <option value="litre"  {% if product.unit == 'litre'  %}selected{% endif %}>Litre (L)</option>
+                <option value="dozen"  {% if product.unit == 'dozen'  %}selected{% endif %}>Dozen</option>
+                <option value="bundle" {% if product.unit == 'bundle' %}selected{% endif %}>Bundle</option>
+                <option value="box"    {% if product.unit == 'box'    %}selected{% endif %}>Box</option>
+              </select>
+              {% if form.unit.errors %}<span class="form-error">{{ form.unit.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="state">State of Origin <span class="req">*</span></label>
+              <select id="state" name="state" required>
+                <option value="">— Select —</option>
+                {% for code, sname in states %}
+                  <option value="{{ code }}" {% if product.shg.state == code %}selected{% endif %}>{{ sname }}</option>
+                {% empty %}
+                  <option value="RJ" {% if product.shg.state == 'RJ' %}selected{% endif %}>Rajasthan</option>
+                  <option value="MH" {% if product.shg.state == 'MH' %}selected{% endif %}>Maharashtra</option>
+                  <option value="UP" {% if product.shg.state == 'UP' %}selected{% endif %}>Uttar Pradesh</option>
+                  <option value="MP" {% if product.shg.state == 'MP' %}selected{% endif %}>Madhya Pradesh</option>
+                  <option value="TN" {% if product.shg.state == 'TN' %}selected{% endif %}>Tamil Nadu</option>
+                  <option value="GJ" {% if product.shg.state == 'GJ' %}selected{% endif %}>Gujarat</option>
+                  <option value="WB" {% if product.shg.state == 'WB' %}selected{% endif %}>West Bengal</option>
+                  <option value="KA" {% if product.shg.state == 'KA' %}selected{% endif %}>Karnataka</option>
+                {% endfor %}
+              </select>
+              {% if form.state.errors %}<span class="form-error">{{ form.state.errors.0 }}</span>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description <span class="req">*</span></label>
+            <textarea id="description" name="description" rows="4"
+              placeholder="Describe your product — materials, process, certifications…"
+              required>{{ form.description.value|default:product.description }}</textarea>
+            <span class="char-count" id="descCount">0 / 500</span>
+            {% if form.description.errors %}<span class="form-error">{{ form.description.errors.0 }}</span>{% endif %}
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ─ SECTION 2: Pricing & Stock ─ -->
+      <div class="form-section">
+        <div class="fs-header">
+          <span class="fs-num">02</span>
+          <div>
+            <h3>Pricing & Stock</h3>
+            <p>Update pricing and available inventory.</p>
+          </div>
+        </div>
+        <div class="fs-body">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="price_per_unit">Price per Unit (₹) <span class="req">*</span></label>
+              <div class="input-prefix">
+                <span>₹</span>
+                <input type="number" id="price_per_unit" name="price_per_unit"
+                  placeholder="0.00" step="0.01" min="0"
+                  value="{{ form.price_per_unit.value|default:product.price_per_unit }}"
+                  required>
+              </div>
+              {% if form.price_per_unit.errors %}<span class="form-error">{{ form.price_per_unit.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="bulk_price">Bulk Price (₹) <span class="hint">Optional</span></label>
+              <div class="input-prefix">
+                <span>₹</span>
+                <input type="number" id="bulk_price" name="bulk_price"
+                  placeholder="Discounted rate for large orders"
+                  step="0.01" min="0"
+                  value="{{ form.bulk_price.value|default:product.bulk_price }}">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="min_order_qty">Minimum Order Qty <span class="req">*</span></label>
+              <input type="number" id="min_order_qty" name="min_order_qty"
+                placeholder="e.g. 50" min="1"
+                value="{{ form.min_order_qty.value|default:product.min_order_qty }}"
+                required>
+              {% if form.min_order_qty.errors %}<span class="form-error">{{ form.min_order_qty.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="available_stock">Available Stock <span class="req">*</span></label>
+              <input type="number" id="available_stock" name="available_stock"
+                placeholder="Total units available" min="0"
+                value="{{ form.available_stock.value|default:product.available_stock }}"
+                required>
+              {% if form.available_stock.errors %}<span class="form-error">{{ form.available_stock.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="lead_time_days">Lead Time (days)</label>
+              <input type="number" id="lead_time_days" name="lead_time_days"
+                placeholder="Days to fulfil after order" min="1"
+                value="{{ form.lead_time_days.value|default:product.lead_time_days }}">
+            </div>
+          </div>
+
+          <!-- Live price preview -->
+          <div class="price-preview" id="pricePreview">
+            <span class="pp-label">Price Preview</span>
+            <div class="pp-values">
+              <div><span>Unit Price</span><strong id="ppUnit">₹—</strong></div>
+              <div><span>Min. Order (×<span id="ppQtyLabel">—</span>)</span><strong id="ppMin">₹—</strong></div>
+              <div><span>Bulk Price</span><strong id="ppBulk">₹—</strong></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ─ SECTION 3: Images ─ -->
+      <div class="form-section">
+        <div class="fs-header">
+          <span class="fs-num">03</span>
+          <div>
+            <h3>Product Images</h3>
+            <p>Existing images are shown below. Upload new ones to replace or add more.</p>
+          </div>
+        </div>
+        <div class="fs-body">
+
+          <!-- Existing images -->
+          {% if product.images.all %}
+            <div class="existing-images-wrap">
+              <p class="existing-label">Current Images</p>
+              <div class="existing-images-grid">
+                {% for img in product.images.all %}
+                  <div class="existing-img-card" id="imgCard{{ img.pk }}">
+                    <img src="{{ img.image.url }}" alt="Product image {{ forloop.counter }}">
+                    <button
+                      type="button"
+                      class="eic-delete"
+                      data-img-id="{{ img.pk }}"
+                      title="Remove this image"
+                      onclick="markImageDelete(this)"
+                    >✕</button>
+                    <!-- Hidden field set when user marks for deletion -->
+                    <input type="hidden" name="delete_image" value="{{ img.pk }}" id="delImg{{ img.pk }}" disabled>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Upload new images -->
+          <div class="image-upload-zone" id="imageDropZone">
+            <input type="file" id="product_images" name="product_images"
+              accept="image/*" multiple class="file-input-hidden">
+            <label for="product_images" class="upload-label">
+              <span class="upload-icon">📸</span>
+              <strong>Click to upload or drag & drop new images</strong>
+              <span>JPG, PNG, WEBP — Max 5MB each · Up to 5 images</span>
+            </label>
+            <div class="image-previews" id="imagePreviews"></div>
+          </div>
+          {% if form.product_images.errors %}
+            <span class="form-error">{{ form.product_images.errors.0 }}</span>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <!-- ─ SECTION 4: Cluster & AI ─ -->
+      <div class="form-section">
+        <div class="fs-header">
+          <span class="fs-num">04</span>
+          <div>
+            <h3>Cluster & AI Settings</h3>
+            <p>Control cluster matching and demand forecasting for this product.</p>
+          </div>
+        </div>
+        <div class="fs-body">
+
+          <div class="toggle-row">
+            <div>
+              <strong>Enable Cluster Matching</strong>
+              <p>Allow nearby SHGs with the same product to join bulk orders.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="cluster_enabled" id="clusterEnabled"
+                {% if product.cluster_enabled %}checked{% endif %}>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div>
+              <strong>Enable Demand Forecasting</strong>
+              <p>Receive AI-generated weekly demand predictions for this product.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="forecast_enabled" id="forecastEnabled"
+                {% if product.forecast_enabled %}checked{% endif %}>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="max_cluster_size">Max Cluster Size (SHGs)</label>
+            <input type="number" id="max_cluster_size" name="max_cluster_size"
+              placeholder="e.g. 5" min="2" max="20"
+              value="{{ form.max_cluster_size.value|default:product.max_cluster_size }}">
+            <span class="form-hint">Maximum number of SHGs that can join this product's cluster.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="tags">Tags <span class="hint">Optional</span></label>
+            <input type="text" id="tags" name="tags"
+              placeholder="handmade, organic, eco-friendly…"
+              value="{{ form.tags.value|default:product.tags_as_string }}">
+            <span class="form-hint">Comma-separated keywords to help buyers find your product.</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ─ DANGER ZONE ─ -->
+      <div class="form-section danger-zone">
+        <div class="fs-header">
+          <span class="fs-num dz-num">!</span>
+          <div>
+            <h3>Danger Zone</h3>
+            <p>These actions are irreversible. Please proceed with caution.</p>
+          </div>
+        </div>
+        <div class="fs-body">
+          <div class="danger-actions">
+            <div class="danger-item">
+              <div>
+                <strong>Unpublish Product</strong>
+                <p>Hide this product from the marketplace without deleting it.</p>
+              </div>
+              <button type="submit" name="action" value="unpublish"
+                class="btn btn-outline btn-sm dz-btn"
+                {% if product.status != 'published' %}disabled{% endif %}>
+                Unpublish
+              </button>
+            </div>
+            <div class="danger-item danger-item-red">
+              <div>
+                <strong>Delete Product</strong>
+                <p>Permanently remove this product and all its data. This cannot be undone.</p>
+              </div>
+              <button
+                type="button"
+                class="btn btn-sm dz-btn-red"
+                id="deleteProductBtn"
+              >Delete Product</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─ NON-FIELD ERRORS ─ -->
+      {% if form.non_field_errors %}
+        <div class="form-error-box">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- ─ SUBMIT ROW ─ -->
+      <div class="ap-submit-row">
+        <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline btn-lg">Discard Changes</a>
+        <button type="submit" name="action" value="draft" class="btn btn-ghost btn-lg">Save as Draft</button>
+        <button type="submit" name="action" value="publish" class="btn btn-primary btn-lg">Save & Publish →</button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ══════════════════════════════
+       SIDEBAR
+  ══════════════════════════════ -->
+  <aside class="ap-sidebar">
+
+    <!-- Current stats -->
+    <div class="tip-card ep-stats-card">
+      <h4>📊 Product Stats</h4>
+      <div class="ep-stats">
+        <div class="ep-stat">
+          <span class="ep-stat-num">{{ product.total_orders|default:0 }}</span>
+          <span class="ep-stat-label">Total Orders</span>
+        </div>
+        <div class="ep-stat">
+          <span class="ep-stat-num">{{ product.review_count|default:0 }}</span>
+          <span class="ep-stat-label">Reviews</span>
+        </div>
+        <div class="ep-stat">
+          <span class="ep-stat-num">{{ product.available_stock|default:0 }}</span>
+          <span class="ep-stat-label">Stock Left</span>
+        </div>
+        <div class="ep-stat">
+          <span class="ep-stat-num">{{ product.avg_rating|default:"—" }}</span>
+          <span class="ep-stat-label">Avg Rating</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Forecast snapshot -->
+    <div class="tip-card tip-card-forecast">
+      <h4>🔮 Current Forecast</h4>
+      <p>Latest AI demand signal for this product:</p>
+      <div class="forecast-mini">
+        <div class="fm-row">
+          <span>Demand Score</span>
+          <span class="fm-val">{{ product.demand_score|default:"—" }}%</span>
+        </div>
+        <div class="fm-row">
+          <span>Trend</span>
+          <span class="fm-val trend-up">{{ product.forecast_trend|default:"Stable" }}</span>
+        </div>
+        <div class="fm-row">
+          <span>Last Updated</span>
+          <span class="fm-val">{{ product.forecast_updated|date:"d M"|default:"—" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit tips -->
+    <div class="tip-card">
+      <h4>✏️ Edit Tips</h4>
+      <ul class="tip-list">
+        <li>Updating stock triggers a fresh demand forecast run</li>
+        <li>Price changes take effect immediately for new orders</li>
+        <li>Existing pending orders keep the original price</li>
+        <li>Re-enable clustering to join new bulk order pools</li>
+        <li>Add fresh photos to boost your listing's visibility</li>
+      </ul>
+    </div>
+
+    <!-- View live listing -->
+    <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline btn-full">
+      👁 Preview Live Listing
+    </a>
+
+  </aside>
+
+</div><!-- end .container -->
+
+
+<!-- ══════════════════════════════
+     DELETE CONFIRMATION MODAL
+══════════════════════════════ -->
+<div class="modal-overlay" id="deleteModal" aria-hidden="true">
+  <div class="modal-box" role="dialog" aria-labelledby="modalTitle">
+    <div class="modal-icon">🗑️</div>
+    <h3 id="modalTitle">Delete "{{ product.name }}"?</h3>
+    <p>This will permanently remove the product, all its images, and associated data. Active orders will NOT be affected.</p>
+    <p class="modal-confirm-text">Type <strong>DELETE</strong> to confirm:</p>
+    <input type="text" id="deleteConfirmInput" class="modal-confirm-input" placeholder="DELETE">
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline btn-lg" id="modalCancelBtn">Cancel</button>
+      <form method="post" action="{% url 'delete_product' product.pk %}" id="deleteForm">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-lg btn-danger" id="modalDeleteBtn" disabled>
+          Yes, Delete Forever
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  /* ── Price preview ── */
+  const priceInput = document.getElementById('price_per_unit');
+  const bulkInput  = document.getElementById('bulk_price');
+  const moqInput   = document.getElementById('min_order_qty');
+
+  function updatePreview() {
+    const p = parseFloat(priceInput.value) || 0;
+    const b = parseFloat(bulkInput.value)  || 0;
+    const q = parseInt(moqInput.value)     || 0;
+    document.getElementById('ppUnit').textContent     = p ? '₹' + p.toFixed(2) : '₹—';
+    document.getElementById('ppQtyLabel').textContent = q || '—';
+    document.getElementById('ppMin').textContent      = (p && q) ? '₹' + (p * q).toLocaleString('en-IN') : '₹—';
+    document.getElementById('ppBulk').textContent     = b ? '₹' + b.toFixed(2) : '₹—';
+  }
+  [priceInput, bulkInput, moqInput].forEach(el => el.addEventListener('input', updatePreview));
+  updatePreview(); // run on load with existing values
+
+  /* ── Char counter ── */
+  const desc    = document.getElementById('description');
+  const counter = document.getElementById('descCount');
+  function updateCounter() {
+    counter.textContent = desc.value.length + ' / 500';
+    counter.style.color = desc.value.length > 450 ? 'var(--clay)' : '';
+  }
+  desc.addEventListener('input', updateCounter);
+  updateCounter(); // run on load
+
+  /* ── New image preview ── */
+  document.getElementById('product_images').addEventListener('change', function () {
+    const wrap = document.getElementById('imagePreviews');
+    wrap.innerHTML = '';
+    [...this.files].slice(0, 5).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const div = document.createElement('div');
+        div.className = 'img-thumb';
+        div.innerHTML = '<img src="' + e.target.result + '" alt="preview">';
+        wrap.appendChild(div);
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  /* ── Drag & Drop ── */
+  const zone = document.getElementById('imageDropZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const input = document.getElementById('product_images');
+    input.files = e.dataTransfer.files;
+    input.dispatchEvent(new Event('change'));
+  });
+
+  /* ── Mark existing image for deletion ── */
+  function markImageDelete(btn) {
+    const imgId  = btn.dataset.imgId;
+    const card   = document.getElementById('imgCard' + imgId);
+    const hidden = document.getElementById('delImg'  + imgId);
+    if (card.classList.contains('eic-marked')) {
+      card.classList.remove('eic-marked');
+      hidden.disabled = true;
+      btn.textContent  = '✕';
+      btn.title        = 'Remove this image';
+    } else {
+      card.classList.add('eic-marked');
+      hidden.disabled = false;
+      btn.textContent  = '↩ Undo';
+      btn.title        = 'Keep this image';
+    }
+  }
+
+  /* ── Delete modal ── */
+  const modal          = document.getElementById('deleteModal');
+  const confirmInput   = document.getElementById('deleteConfirmInput');
+  const modalDeleteBtn = document.getElementById('modalDeleteBtn');
+
+  document.getElementById('deleteProductBtn').addEventListener('click', () => {
+    modal.classList.add('modal-open');
+    modal.setAttribute('aria-hidden', 'false');
+    confirmInput.value = '';
+    modalDeleteBtn.disabled = true;
+    confirmInput.focus();
+  });
+
+  document.getElementById('modalCancelBtn').addEventListener('click', () => {
+    modal.classList.remove('modal-open');
+    modal.setAttribute('aria-hidden', 'true');
+  });
+
+  modal.addEventListener('click', e => {
+    if (e.target === modal) {
+      modal.classList.remove('modal-open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  confirmInput.addEventListener('input', () => {
+    modalDeleteBtn.disabled = confirmInput.value.trim() !== 'DELETE';
+  });
+</script>
+
+{% endblock %}

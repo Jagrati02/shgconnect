@@ -1,13 +1,380 @@
-{% extends 'base/base.html' %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Product — SahayogBazaar{% endblock %}
 
 {% block content %}
-<h2>Add Product</h2>
 
-<form method="POST">
-    {% csrf_token %}
-    <input type="text" name="name" class="form-control mb-2" placeholder="Product Name">
-    <input type="number" name="price" class="form-control mb-2" placeholder="Price">
-    <button class="btn btn-primary">Add</button>
-</form>
+<!-- ── PAGE HEADER ── -->
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Dashboard</span>
+      <h1 class="ph-title">List a New Product</h1>
+      <p class="ph-sub">Add your SHG product to the marketplace and reach buyers across India.</p>
+    </div>
+    <a href="{% url 'product_list' %}" class="btn btn-outline btn-sm">← Back to Marketplace</a>
+  </div>
+</div>
+
+<div class="container ap-layout">
+
+  <!-- ── FORM PANEL ── -->
+  <div class="ap-main">
+    <form method="post" action="{% url 'add_product' %}" enctype="multipart/form-data" class="ap-form" id="addProductForm" novalidate>
+      {% csrf_token %}
+
+      <!-- ─ SECTION 1: Basic Info ─ -->
+      <div class="form-section">
+        <div class="fs-header">
+          <span class="fs-num">01</span>
+          <div>
+            <h3>Product Information</h3>
+            <p>Tell buyers what you're selling.</p>
+          </div>
+        </div>
+        <div class="fs-body">
+
+          <div class="form-group">
+            <label for="name">Product Name <span class="req">*</span></label>
+            <input type="text" id="name" name="name"
+              placeholder="e.g. Handwoven Jute Bag, Organic Mustard Oil"
+              value="{{ form.name.value|default:'' }}" required>
+            {% if form.name.errors %}<span class="form-error">{{ form.name.errors.0 }}</span>{% endif %}
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="category">Category <span class="req">*</span></label>
+              <select id="category" name="category" required>
+                <option value="">— Select —</option>
+                {% for cat in categories %}
+                  <option value="{{ cat.pk }}" {% if form.category.value == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                {% empty %}
+                  <option value="food">Food & Pickles</option>
+                  <option value="textiles">Textiles & Fabric</option>
+                  <option value="handicrafts">Handicrafts</option>
+                  <option value="agri">Agriculture</option>
+                  <option value="beauty">Beauty & Wellness</option>
+                  <option value="paper">Paper Products</option>
+                {% endfor %}
+              </select>
+              {% if form.category.errors %}<span class="form-error">{{ form.category.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="unit">Unit of Sale <span class="req">*</span></label>
+              <select id="unit" name="unit" required>
+                <option value="">— Select —</option>
+                <option value="piece" {% if form.unit.value == 'piece' %}selected{% endif %}>Piece</option>
+                <option value="kg" {% if form.unit.value == 'kg' %}selected{% endif %}>Kilogram (kg)</option>
+                <option value="gram" {% if form.unit.value == 'gram' %}selected{% endif %}>Gram (g)</option>
+                <option value="litre" {% if form.unit.value == 'litre' %}selected{% endif %}>Litre (L)</option>
+                <option value="dozen" {% if form.unit.value == 'dozen' %}selected{% endif %}>Dozen</option>
+                <option value="bundle" {% if form.unit.value == 'bundle' %}selected{% endif %}>Bundle</option>
+                <option value="box" {% if form.unit.value == 'box' %}selected{% endif %}>Box</option>
+              </select>
+              {% if form.unit.errors %}<span class="form-error">{{ form.unit.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="state">State of Origin <span class="req">*</span></label>
+              <select id="state" name="state" required>
+                <option value="">— Select —</option>
+                {% for code, sname in states %}
+                  <option value="{{ code }}" {% if form.state.value == code %}selected{% endif %}>{{ sname }}</option>
+                {% empty %}
+                  <option value="RJ">Rajasthan</option>
+                  <option value="MH">Maharashtra</option>
+                  <option value="UP">Uttar Pradesh</option>
+                  <option value="MP">Madhya Pradesh</option>
+                  <option value="TN">Tamil Nadu</option>
+                  <option value="GJ">Gujarat</option>
+                  <option value="WB">West Bengal</option>
+                  <option value="KA">Karnataka</option>
+                {% endfor %}
+              </select>
+              {% if form.state.errors %}<span class="form-error">{{ form.state.errors.0 }}</span>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description <span class="req">*</span></label>
+            <textarea id="description" name="description" rows="4"
+              placeholder="Describe your product — materials, process, certifications, shelf life…" required>{{ form.description.value|default:'' }}</textarea>
+            <span class="char-count" id="descCount">0 / 500</span>
+            {% if form.description.errors %}<span class="form-error">{{ form.description.errors.0 }}</span>{% endif %}
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ─ SECTION 2: Pricing & Stock ─ -->
+      <div class="form-section">
+        <div class="fs-header">
+          <span class="fs-num">02</span>
+          <div>
+            <h3>Pricing & Stock</h3>
+            <p>Set your price and stock levels.</p>
+          </div>
+        </div>
+        <div class="fs-body">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="price_per_unit">Price per Unit (₹) <span class="req">*</span></label>
+              <div class="input-prefix">
+                <span>₹</span>
+                <input type="number" id="price_per_unit" name="price_per_unit"
+                  placeholder="0.00" step="0.01" min="0"
+                  value="{{ form.price_per_unit.value|default:'' }}" required>
+              </div>
+              {% if form.price_per_unit.errors %}<span class="form-error">{{ form.price_per_unit.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="bulk_price">Bulk Price (₹) <span class="hint">Optional</span></label>
+              <div class="input-prefix">
+                <span>₹</span>
+                <input type="number" id="bulk_price" name="bulk_price"
+                  placeholder="Discounted rate for large orders"
+                  step="0.01" min="0"
+                  value="{{ form.bulk_price.value|default:'' }}">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="min_order_qty">Minimum Order Qty <span class="req">*</span></label>
+              <input type="number" id="min_order_qty" name="min_order_qty"
+                placeholder="e.g. 50" min="1"
+                value="{{ form.min_order_qty.value|default:'' }}" required>
+              {% if form.min_order_qty.errors %}<span class="form-error">{{ form.min_order_qty.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="available_stock">Available Stock <span class="req">*</span></label>
+              <input type="number" id="available_stock" name="available_stock"
+                placeholder="Total units available" min="1"
+                value="{{ form.available_stock.value|default:'' }}" required>
+              {% if form.available_stock.errors %}<span class="form-error">{{ form.available_stock.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="lead_time_days">Lead Time (days)</label>
+              <input type="number" id="lead_time_days" name="lead_time_days"
+                placeholder="Days to fulfil after order" min="1"
+                value="{{ form.lead_time_days.value|default:'' }}">
+            </div>
+          </div>
+
+          <!-- Live price preview -->
+          <div class="price-preview" id="pricePreview">
+            <span class="pp-label">Price Preview</span>
+            <div class="pp-values">
+              <div><span>Unit Price</span><strong id="ppUnit">₹—</strong></div>
+              <div><span>Min. Order (×<span id="ppQtyLabel">—</span>)</span><strong id="ppMin">₹—</strong></div>
+              <div><span>Bulk Price</span><strong id="ppBulk">₹—</strong></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ─ SECTION 3: Images ─ -->
+      <div class="form-section">
+        <div class="fs-header">
+          <span class="fs-num">03</span>
+          <div>
+            <h3>Product Images</h3>
+            <p>Upload clear photos — good images increase orders by 3×.</p>
+          </div>
+        </div>
+        <div class="fs-body">
+          <div class="image-upload-zone" id="imageDropZone">
+            <input type="file" id="image" name="image"
+              accept="image/*" class="file-input-hidden">
+            <label for="product_images" class="upload-label">
+              <span class="upload-icon">📸</span>
+              <strong>Click to upload or drag & drop</strong>
+              <span>JPG, PNG, WEBP — Max 5MB each · Up to 5 images</span>
+            </label>
+            <div class="image-previews" id="imagePreviews"></div>
+          </div>
+          {% if form.product_images.errors %}
+            <span class="form-error">{{ form.product_images.errors.0 }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ─ SECTION 4: Cluster & Forecast ─ -->
+      <div class="form-section">
+        <div class="fs-header">
+          <span class="fs-num">04</span>
+          <div>
+            <h3>Cluster & AI Settings</h3>
+            <p>Let our ML model match you with other SHGs to fulfil bulk orders.</p>
+          </div>
+        </div>
+        <div class="fs-body">
+
+          <div class="toggle-row">
+            <div>
+              <strong>Enable Cluster Matching</strong>
+              <p>Allow nearby SHGs with the same product to join your orders.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="cluster_enabled" id="clusterEnabled"
+                {% if form.cluster_enabled.value %}checked{% endif %}>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div>
+              <strong>Enable Demand Forecasting</strong>
+              <p>Get AI-generated weekly demand predictions for this product.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="forecast_enabled" id="forecastEnabled"
+                {% if form.forecast_enabled.value %}checked{% endif %}>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <div class="form-group" id="clusterSizeGroup">
+            <label for="max_cluster_size">Max Cluster Size (SHGs)</label>
+            <input type="number" id="max_cluster_size" name="max_cluster_size"
+              placeholder="e.g. 5" min="2" max="20"
+              value="{{ form.max_cluster_size.value|default:'' }}">
+            <span class="form-hint">Maximum number of SHGs that can join this product's cluster.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="tags">Tags <span class="hint">Optional</span></label>
+            <input type="text" id="tags" name="tags"
+              placeholder="handmade, organic, eco-friendly, festive…"
+              value="{{ form.tags.value|default:'' }}">
+            <span class="form-hint">Comma-separated keywords to help buyers find your product.</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ─ NON-FIELD ERRORS ─ -->
+      {% if form.non_field_errors %}
+        <div class="form-error-box">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- ─ SUBMIT ─ -->
+      <div class="ap-submit-row">
+        <button type="button" onclick="history.back()" class="btn btn-outline btn-lg">Discard</button>
+        <button type="submit" name="action" value="draft" class="btn btn-ghost btn-lg">Save as Draft</button>
+        <button type="submit" name="action" value="publish" class="btn btn-primary btn-lg">Publish to Marketplace →</button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ── SIDEBAR TIPS ── -->
+  <aside class="ap-sidebar">
+
+    <div class="tip-card">
+      <h4>📌 Listing Tips</h4>
+      <ul class="tip-list">
+        <li>Use a clear product name buyers would search for</li>
+        <li>Add at least 2–3 photos from different angles</li>
+        <li>Set competitive pricing based on local market rates</li>
+        <li>Enable clustering to unlock bulk order eligibility</li>
+        <li>Accurate lead time builds buyer trust</li>
+      </ul>
+    </div>
+
+    <div class="tip-card tip-card-forecast">
+      <h4>🔮 AI Forecast Preview</h4>
+      <p>Based on current buyer trends, products in your category have seen:</p>
+      <div class="forecast-mini">
+        <div class="fm-row">
+          <span>Demand Trend</span>
+          <span class="fm-val trend-up">↑ 28%</span>
+        </div>
+        <div class="fm-row">
+          <span>Avg. Bulk Order</span>
+          <span class="fm-val">3,200 units</span>
+        </div>
+        <div class="fm-row">
+          <span>Peak Season</span>
+          <span class="fm-val">Oct – Jan</span>
+        </div>
+      </div>
+      <small>Enable forecasting to get product-specific insights.</small>
+    </div>
+
+    <div class="tip-card tip-card-cluster">
+      <h4>🧩 How Clustering Works</h4>
+      <p>Our ML model groups your SHG with nearby producers of the same product to fulfil large bulk orders you couldn't handle alone — with fair revenue split.</p>
+      <a href="#" class="btn btn-outline btn-sm" style="margin-top:12px">Learn More →</a>
+    </div>
+
+  </aside>
+
+</div><!-- end .container -->
+
+<script>
+  // ── Price preview ──
+  const priceInput = document.getElementById('price_per_unit');
+  const bulkInput  = document.getElementById('bulk_price');
+  const moqInput   = document.getElementById('min_order_qty');
+
+  function updatePreview() {
+    const p = parseFloat(priceInput.value) || 0;
+    const b = parseFloat(bulkInput.value)  || 0;
+    const q = parseInt(moqInput.value)     || 0;
+    document.getElementById('ppUnit').textContent    = p ? `₹${p.toFixed(2)}` : '₹—';
+    document.getElementById('ppQtyLabel').textContent = q || '—';
+    document.getElementById('ppMin').textContent     = (p && q) ? `₹${(p * q).toLocaleString('en-IN')}` : '₹—';
+    document.getElementById('ppBulk').textContent    = b ? `₹${b.toFixed(2)}` : '₹—';
+  }
+  [priceInput, bulkInput, moqInput].forEach(el => el.addEventListener('input', updatePreview));
+
+  // ── Char counter ──
+  const desc = document.getElementById('description');
+  const counter = document.getElementById('descCount');
+  desc.addEventListener('input', () => {
+    counter.textContent = `${desc.value.length} / 500`;
+    counter.style.color = desc.value.length > 450 ? 'var(--clay)' : '';
+  });
+
+  // ── Image preview ──
+  document.getElementById('image').addEventListener('change', function () {
+    const wrap = document.getElementById('imagePreviews');
+    wrap.innerHTML = '';
+    [...this.files].slice(0, 5).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const div = document.createElement('div');
+        div.className = 'img-thumb';
+        div.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+        wrap.appendChild(div);
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  // ── Drag & Drop ──
+  const zone = document.getElementById('imageDropZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const input = document.getElementById('product_images');
+    input.files = e.dataTransfer.files;
+    input.dispatchEvent(new Event('change'));
+  });
+</script>
 
 {% endblock %}
