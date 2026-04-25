@@ -88,9 +88,10 @@ def product_detail(request, pk):
     context = {
         'product':          product,
         'related_products': related_products,
-        'reviews':          [],      # no Review model yet — empty list
+        'reviews':          [],
         'user_can_review':  user_can_review,
         'order_pk':         order_pk,
+        'product_tags':     [t.strip() for t in product.tags.split(',')] if product.tags else [],
     }
     return render(request, 'product_detail.html', context)
 
