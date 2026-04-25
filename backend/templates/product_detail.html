@@ -143,10 +143,10 @@
     <!-- Description -->
     <div class="pd-tab-panel active" id="tab-description">
       <div class="tab-prose">{{ product.description|linebreaks }}</div>
-      {% if product.tags %}
+      {% if product_tags %}
         <div class="tags-row">
-          {% for tag in product.tags.split ',' %}
-            <span class="tag-pill">{{ tag|strip }}</span>
+          {% for tag in product_tags %}
+            <span class="tag-pill">{{ tag }}</span>
           {% endfor %}
         </div>
       {% endif %}

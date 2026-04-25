@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Place Order — {{ product.name }} — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb-bar">
+  <div class="container breadcrumb-inner">
+    <a href="{% url 'home' %}">Home</a>
+    <span class="bc-sep">›</span>
+    <a href="{% url 'product_list' %}">Marketplace</a>
+    <span class="bc-sep">›</span>
+    <a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a>
+    <span class="bc-sep">›</span>
+    <span class="bc-current">Place Order</span>
+  </div>
+</div>
+
+<div class="container" style="padding-top:40px; padding-bottom:60px; max-width:820px;">
+
+  <div class="section-header" style="text-align:left; margin-bottom:28px;">
+    <span class="section-tag">Order</span>
+    <h1 class="ph-title">Place Bulk Order</h1>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:start;">
+
+    <!-- LEFT — Product Summary -->
+    <div class="dash-card">
+      <div class="dc-header"><h3>Product Summary</h3></div>
+      <div style="padding:22px; display:flex; flex-direction:column; gap:14px;">
+
+        <!-- Image -->
+        {% if product.image %}
+          <img src="{{ product.image.url }}" alt="{{ product.name }}"
+               style="width:100%; border-radius:var(--radius-md); object-fit:cover; max-height:200px;">
+        {% else %}
+          <div style="width:100%; height:160px; background:var(--cream-dark);
+                      border-radius:var(--radius-md); display:flex;
+                      align-items:center; justify-content:center; font-size:3rem;">
+            🧺
+          </div>
+        {% endif %}
+
+        <!-- Details -->
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <h3 style="font-family:var(--ff-head); font-size:1.15rem; color:var(--ink);">
+            {{ product.name }}
+          </h3>
+          <div style="font-size:0.85rem; color:var(--ink-soft);">
+            <span class="shg-dot">⬡</span>
+            {{ product.shg.shg_name }} · {{ product.shg.state }}
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px;
+                      padding:14px; background:var(--cream); border-radius:var(--radius-sm);">
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <span style="color:var(--ink-soft);">Price per unit</span>
+              <strong>₹{{ product.price }}</strong>
+            </div>
+            {% if product.bulk_price %}
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <span style="color:var(--ink-soft);">Bulk price</span>
+              <strong style="color:var(--green);">₹{{ product.bulk_price }}</strong>
+            </div>
+            {% endif %}
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <span style="color:var(--ink-soft);">Minimum order</span>
+              <strong>{{ product.min_order_qty|default:1 }} {{ product.unit|default:"units" }}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <span style="color:var(--ink-soft);">Available stock</span>
+              <strong
+                {% if product.quantity_available > 100 %}style="color:var(--green);"
+                {% elif product.quantity_available > 0 %}style="color:#B07D00;"
+                {% else %}style="color:#C0392B;"{% endif %}>
+                {{ product.quantity_available }} units
+              </strong>
+            </div>
+            {% if product.lead_time_days %}
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <span style="color:var(--ink-soft);">Lead time</span>
+              <strong>{{ product.lead_time_days }} days</strong>
+            </div>
+            {% endif %}
+          </div>
+
+          {% if product.cluster_enabled %}
+            <div style="background:var(--green-lt); border:1px solid rgba(58,125,68,.25);
+                        border-radius:var(--radius-sm); padding:10px 14px;
+                        font-size:0.83rem; color:var(--green); display:flex; gap:8px;">
+              <span>🧩</span>
+              <span>Cluster matching enabled — large orders fulfilled by nearby SHGs.</span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT — Order Form -->
+    <div class="dash-card">
+      <div class="dc-header"><h3>Your Order</h3></div>
+      <div style="padding:22px;">
+
+        <form method="post" action="{% url 'place_order' product.pk %}"
+              id="orderForm"
+              data-price="{{ product.price }}"
+              data-min-qty="{{ product.min_order_qty|default:1 }}"
+              data-max-stock="{{ product.quantity_available }}"
+              novalidate>
+          {% csrf_token %}
+
+          <!-- Quantity input -->
+          <div class="form-group" style="margin-bottom:18px;">
+            <label for="quantity">
+              Quantity
+              <span style="font-size:0.78rem; color:var(--ink-soft); font-weight:400;">
+                (min {{ product.min_order_qty|default:1 }})
+              </span>
+            </label>
+            <div class="qty-control" style="width:fit-content;">
+              <button type="button" class="qty-btn" id="qtyMinus">−</button>
+              <input type="number"
+                     id="quantity"
+                     name="quantity"
+                     value="{{ product.min_order_qty|default:1 }}"
+                     min="{{ product.min_order_qty|default:1 }}"
+                     max="{{ product.quantity_available }}"
+                     class="qty-input"
+                     required>
+              <button type="button" class="qty-btn" id="qtyPlus">+</button>
+            </div>
+            {% if form.quantity.errors %}
+              <span class="form-error">{{ form.quantity.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Live total -->
+          <div class="order-total-preview" style="margin-bottom:22px;">
+            <span>Estimated Total</span>
+            <strong id="orderTotal">₹{{ product.price }}</strong>
+          </div>
+
+          <!-- Form errors -->
+          {% if form.non_field_errors %}
+            <div class="form-error-box" style="margin-bottom:16px;">
+              {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="form-error-box" style="margin-bottom:16px;">
+                <p>{{ message }}</p>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <!-- Stock warning -->
+          {% if product.quantity_available == 0 %}
+            <div class="form-error-box" style="margin-bottom:16px;">
+              <p>This product is currently out of stock.</p>
+            </div>
+          {% endif %}
+
+          <!-- Submit -->
+          <button type="submit"
+                  class="btn btn-primary btn-full btn-lg"
+                  {% if product.quantity_available == 0 %}disabled{% endif %}>
+            Confirm Order →
+          </button>
+
+          <a href="{% url 'product_detail' product.pk %}"
+             class="btn btn-outline btn-full"
+             style="margin-top:10px;">
+            ← Back to Product
+          </a>
+
+        </form>
+
+        <!-- Trust row -->
+        <div class="trust-row" style="margin-top:20px;">
+          <div class="trust-item"><span>🔒</span> Secure</div>
+          <div class="trust-item"><span>✅</span> Verified SHG</div>
+          <div class="trust-item"><span>↩️</span> Easy Returns</div>
+          <div class="trust-item"><span>🚚</span> Pan-India</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const form      = document.getElementById('orderForm');
+  const qtyInput  = document.getElementById('quantity');
+  const totalEl   = document.getElementById('orderTotal');
+  const price     = parseFloat(form.dataset.price)    || 0;
+  const minQty    = parseInt(form.dataset.minQty)     || 1;
+  const maxStock  = parseInt(form.dataset.maxStock)   || 9999;
+
+  function updateTotal() {
+    const qty   = parseInt(qtyInput.value) || minQty;
+    totalEl.textContent = '₹' + (qty * price).toLocaleString('en-IN');
+  }
+
+  document.getElementById('qtyMinus').addEventListener('click', () => {
+    const cur = parseInt(qtyInput.value);
+    if (cur - minQty >= minQty) { qtyInput.value = cur - minQty; updateTotal(); }
+  });
+
+  document.getElementById('qtyPlus').addEventListener('click', () => {
+    const cur = parseInt(qtyInput.value);
+    if (cur + minQty <= maxStock) { qtyInput.value = cur + minQty; updateTotal(); }
+  });
+
+  qtyInput.addEventListener('change', () => {
+    let v = parseInt(qtyInput.value);
+    if (v < minQty)   v = minQty;
+    if (v > maxStock) v = maxStock;
+    qtyInput.value = v;
+    updateTotal();
+  });
+
+  updateTotal();
+</script>
+
+{% endblock %}

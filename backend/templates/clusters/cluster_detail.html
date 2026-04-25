@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ cluster.name }} — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumb-bar">
+  <div class="container breadcrumb-inner">
+    <a href="{% url 'home' %}">Home</a>
+    <span class="bc-sep">›</span>
+    <a href="{% url 'cluster_list' %}">Clusters</a>
+    <span class="bc-sep">›</span>
+    <span class="bc-current">{{ cluster.name }}</span>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Cluster {{ cluster.label }}</span>
+      <h1 class="ph-title">{{ cluster.name }}</h1>
+      <p class="ph-sub">{{ cluster.description }}</p>
+    </div>
+    <a href="{% url 'cluster_list' %}" class="btn btn-outline btn-sm">← All Clusters</a>
+  </div>
+</div>
+
+<div class="container" style="padding-top:32px; padding-bottom:60px;">
+
+  <!-- KPI ROW -->
+  <div class="kpi-grid" style="margin-bottom:28px;">
+    <div class="kpi-card kpi-revenue">
+      <div class="kpi-icon">🧩</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Total SHGs</span>
+        <span class="kpi-value">{{ cluster.total_shgs|default:0 }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-orders">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Avg Members</span>
+        <span class="kpi-value">{{ avg_members }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-products">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Avg Savings</span>
+        <span class="kpi-value">₹{{ avg_savings }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-cluster">
+      <div class="kpi-icon">⚡</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Total Capacity</span>
+        <span class="kpi-value">{{ total_capacity }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ML METRICS -->
+  <div class="dash-card" style="margin-bottom:24px;">
+    <div class="dc-header"><h3>🧠 ML Model Metrics</h3></div>
+    <div style="padding:20px 24px; display:flex; gap:40px; flex-wrap:wrap;">
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Algorithm</span>
+        <strong>{{ cluster.algorithm }}</strong>
+      </div>
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">K Value</span>
+        <strong>{{ cluster.k_value }}</strong>
+      </div>
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Silhouette Score</span>
+        <strong>{{ cluster.silhouette_score }}</strong>
+      </div>
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Davies-Bouldin Index</span>
+        <strong>{{ cluster.db_index }}</strong>
+      </div>
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Primary Livelihood</span>
+        <strong>{{ cluster.primary_livelihood|title }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-row-2" style="margin-bottom:24px;">
+
+    <!-- STATE DISTRIBUTION -->
+    <div class="dash-card">
+      <div class="dc-header"><h3>🗺️ State Distribution</h3></div>
+      <div style="padding:16px 24px;">
+        {% for item in state_dist %}
+          <div style="display:flex; justify-content:space-between; align-items:center;
+                      padding:8px 0; border-bottom:1px solid var(--border);">
+            <span style="font-size:0.88rem;">{{ item.state }}</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:100px; height:6px; background:var(--cream-dark);
+                          border-radius:50px; overflow:hidden;">
+                <div class="progress-bar" data-width="{{ item.count|default:0 }}">
+                </div>
+              </div>
+              <span style="font-size:0.82rem; color:var(--ink-soft);">{{ item.count }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- LIVELIHOOD BREAKDOWN -->
+    <div class="dash-card">
+      <div class="dc-header"><h3>🌾 Livelihood Breakdown</h3></div>
+      <div style="padding:16px 24px;">
+        {% for item in livelihood_dist %}
+          <div style="display:flex; justify-content:space-between;
+                      padding:8px 0; border-bottom:1px solid var(--border);">
+            <span style="font-size:0.88rem;">{{ item.primary_livelihood|title }}</span>
+            <span class="badge badge-cluster" style="font-size:0.72rem;">
+              {{ item.count }}
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MEMBER SHGs TABLE -->
+  <div class="dash-card">
+    <div class="dc-header">
+      <h3>SHG Members (showing first 50 of {{ total_members }})</h3>
+    </div>
+    <div class="dp-table-wrap" style="border:none; border-radius:0; box-shadow:none;">
+      <table class="dp-table">
+        <thead>
+          <tr>
+            <th>SHG Name</th>
+            <th>State</th>
+            <th>District</th>
+            <th>Primary Livelihood</th>
+            <th>Members</th>
+            <th>Savings (₹)</th>
+            <th>Category</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in members %}
+            <tr class="dpt-row">
+              <td><strong style="font-size:0.85rem;">{{ m.shg_name }}</strong></td>
+              <td class="dpt-date">{{ m.state }}</td>
+              <td class="dpt-date">{{ m.district }}</td>
+              <td><span class="dpt-cat">{{ m.primary_livelihood|title }}</span></td>
+              <td class="dpt-orders">{{ m.active_members }}</td>
+              <td class="dpt-price">{{ m.savings_amount|floatformat:0 }}</td>
+              <td><span class="dpt-cat">{{ m.shg_category }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" style="text-align:center; padding:40px; color:var(--ink-soft);">
+              No members found
+            </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

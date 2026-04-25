@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Dashboard — {{ shg.name }} — SahayogBazaar{% endblock %}
+{% block title %}Dashboard — {{ shg.shg_name }} — SahayogBazaar{% endblock %}
 
 {% block content %}
 
@@ -16,13 +16,13 @@
     <div class="sidebar-profile">
       <div class="sp-avatar">
         {% if shg.logo %}
-          <img src="{{ shg.logo.url }}" alt="{{ shg.name }}">
+          <img src="{{ shg.logo.url }}" alt="{{ shg.shg_name }}">
         {% else %}
           <span>⬡</span>
         {% endif %}
       </div>
       <div class="sp-info">
-        <strong>{{ shg.name }}</strong>
+        <strong>{{ shg.shg_name }}</strong>
         <span>{{ shg.district }}, {{ shg.state }}</span>
       </div>
       <div class="sp-badge
@@ -89,7 +89,7 @@
       <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
       <div class="dt-left">
         <h2 class="dt-greeting">
-          Good {{ time_of_day|default:"day" }}, <em>{{ request.user.first_name|default:shg.name }}</em> 👋
+          Good {{ time_of_day|default:"day" }}, <em>{{ request.user.first_name|default:shg.shg_name }}</em> 👋
         </h2>
         <span class="dt-date">{{ today|date:"l, d F Y" }}</span>
       </div>
@@ -206,26 +206,39 @@
         <div class="dash-card">
           <div class="dc-header">
             <h3>Recent Orders</h3>
-            <a href="{% url 'my_orders' %}" class="dc-link">View All →</a>
+            <a href="{% url 'shg_orders_dashboard' %}" class="dc-link">View All →</a>
           </div>
           {% if recent_orders %}
             <div class="mini-orders">
               {% for order in recent_orders %}
                 <div class="mo-row">
+                  <!-- Show first item's product image -->
                   <div class="mo-thumb">
-                    {% if order.product.images.first %}
-                      <img src="{{ order.product.images.first.image.url }}" alt="">
-                    {% else %}
-                      <span>🧺</span>
-                    {% endif %}
+                    {% with first_item=order.items.first %}
+                      {% if first_item and first_item.product.image %}
+                        <img src="{{ first_item.product.image.url }}" alt="">
+                      {% else %}
+                        <span>🧺</span>
+                      {% endif %}
+                    {% endwith %}
                   </div>
                   <div class="mo-info">
-                    <strong>{{ order.product.name }}</strong>
-                    <span>{{ order.quantity }} units · {{ order.order.order_date|date:"d M"|date:"d M" }}</span>
+                    <!-- List all product names in the order -->
+                    <strong>
+                      {% for item in order.items.all %}
+                        {{ item.product.name }}{% if not forloop.last %}, {% endif %}
+                      {% endfor %}
+                    </strong>
+                    <span>
+                      Buyer: {{ order.buyer.get_full_name|default:order.buyer.username }}
+                      · {{ order.order_date|date:"d M" }}
+                    </span>
                   </div>
                   <div class="mo-right">
-                    <span class="status-pill status-{{ order.order.order_status|lower|lower }}">{{ order.order.order_status|lower|title }}</span>
-                    <span class="mo-amount">₹{{ order.total_amount }}</span>
+                    <span class="status-pill status-{{ order.order_status|lower }}">
+                      {{ order.get_order_status_display }}
+                    </span>
+                    <span class="mo-amount">₹{{ order.total_price }}</span>
                   </div>
                 </div>
               {% endfor %}
@@ -486,8 +499,8 @@
                 <tr class="dpt-row">
                   <td>
                     <div class="dpt-product">
-                      {% if product.images.first %}
-                        <img src="{{ product.images.first.image.url }}" alt="" class="dpt-thumb">
+                      {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="" class="dpt-thumb">
                       {% else %}
                         <div class="dpt-thumb-ph">🧺</div>
                       {% endif %}
@@ -498,13 +511,13 @@
                     </div>
                   </td>
                   <td><span class="dpt-cat">{{ product.category }}</span></td>
-                  <td class="dpt-price">₹{{ product.price_per_unit }}<small>/{{ product.unit|default:"unit" }}</small></td>
+                  <td class="dpt-price">₹{{ product.price }}<small>/{{ product.unit|default:"unit" }}</small></td>
                   <td>
                     <span class="dpt-stock
-                      {% if product.available_stock > 200 %}stock-ok
-                      {% elif product.available_stock > 50 %}stock-warn
+                      {% if product.quantity_available > 200 %}stock-ok
+                      {% elif product.quantity_available > 50 %}stock-warn
                       {% else %}stock-low{% endif %}">
-                      {{ product.available_stock|default:0 }}
+                      {{ product.quantity_available|default:0 }}
                     </span>
                   </td>
                   <td class="dpt-orders">{{ product.total_orders|default:0 }}</td>
@@ -519,8 +532,8 @@
                   </td>
                   <td>
                     <span class="status-pill
-                      {% if product.status == 'published' %}status-delivered
-                      {% elif product.status == 'draft' %}status-pending
+                      {% if product.is_active %}status-delivered
+                      {% elif not product.is_active %}status-pending
                       {% else %}status-confirmed{% endif %}">
                       {{ product.status|title }}
                     </span>
@@ -568,9 +581,9 @@
             <thead>
               <tr>
                 <th>Order ID</th>
-                <th>Product</th>
+                <th>Products Ordered</th>
                 <th>Buyer</th>
-                <th>Qty</th>
+                <th>Total Qty</th>
                 <th>Amount</th>
                 <th>Date</th>
                 <th>Status</th>
@@ -579,21 +592,62 @@
             </thead>
             <tbody>
               {% for order in dashboard_orders %}
-                <tr class="dpt-row order-row" data-status="{{ order.order.order_status|lower|lower }}">
-                  <td><span class="dpt-id">#{{ order.order_id|default:order.pk }}</span></td>
+                <tr class="dpt-row order-row"
+                    data-status="{{ order.order_status|lower }}">
                   <td>
-                    <div class="dpt-product" style="gap:8px;">
-                      <span style="font-size:1.1rem">🧺</span>
-                      <strong style="font-size:0.85rem">{{ order.product.name }}</strong>
-                    </div>
+                    <span class="dpt-id">#{{ order.pk }}</span>
                   </td>
-                  <td class="dpt-buyer">{{ order.buyer.get_full_name|default:order.buyer.username }}</td>
-                  <td>{{ order.quantity }}</td>
-                  <td class="dpt-price">₹{{ order.total_amount }}</td>
-                  <td class="dpt-date">{{ order.order.order_date|date:"d M"|date:"d M Y" }}</td>
-                  <td><span class="status-pill status-{{ order.order.order_status|lower|lower }}">{{ order.order.order_status|lower|title }}</span></td>
                   <td>
-                    <a href="{% url 'order_detail' order.pk %}" class="dpt-btn" title="View">👁</a>
+                    <!-- Show all products in this order -->
+                    {% for item in order.items.all %}
+                      <div class="dpt-product" style="gap:8px; margin-bottom:4px;">
+                        {% if item.product.image %}
+                          <img src="{{ item.product.image.url }}"
+                               alt="" class="dpt-thumb"
+                               style="width:32px; height:32px;">
+                        {% else %}
+                          <div class="dpt-thumb-ph"
+                               style="width:32px; height:32px; font-size:1rem;">
+                            🧺
+                          </div>
+                        {% endif %}
+                        <div>
+                          <strong style="font-size:0.83rem;">
+                            {{ item.product.name }}
+                          </strong>
+                          <span style="display:block; font-size:0.72rem;
+                                       color:var(--ink-soft);">
+                            {{ item.quantity }} {{ item.product.unit|default:"units" }}
+                            · ₹{{ item.price }} each
+                          </span>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </td>
+                  <td>
+                    <span class="dpt-buyer">
+                      {{ order.buyer.get_full_name|default:order.buyer.username }}
+                    </span>
+                    <span style="display:block; font-size:0.72rem;
+                                 color:var(--ink-soft);">
+                      {{ order.buyer.email }}
+                    </span>
+                  </td>
+                  <td class="dpt-orders">
+                    {% for item in order.items.all %}
+                      {{ item.quantity }}{% if not forloop.last %} + {% endif %}
+                    {% endfor %}
+                  </td>
+                  <td class="dpt-price">₹{{ order.total_price }}</td>
+                  <td class="dpt-date">{{ order.order_date|date:"d M Y" }}</td>
+                  <td>
+                    <span class="status-pill status-{{ order.order_status|lower }}">
+                      {{ order.get_order_status_display }}
+                    </span>
+                  </td>
+                  <td>
+                    <a href="{% url 'order_detail' order.pk %}"
+                       class="dpt-btn" title="View">👁</a>
                   </td>
                 </tr>
               {% endfor %}
@@ -622,7 +676,7 @@
           <div class="co-shg-node">
             <div class="con-center">
               <span class="con-icon">⬡</span>
-              <strong>{{ shg.name }}</strong>
+              <strong>{{ shg.shg_name }}</strong>
               <span>Your SHG</span>
             </div>
             {% if cluster_members %}
@@ -745,7 +799,7 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label for="shg_name">SHG Name</label>
-                    <input type="text" id="shg_name" name="name" value="{{ shg.name }}">
+                    <input type="text" id="shg_name" name="name" value="{{ shg.shg_name }}">
                   </div>
                   <div class="form-group">
                     <label for="shg_reg">Registration No.</label>

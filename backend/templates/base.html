@@ -28,17 +28,26 @@
       <ul class="nav-links" id="navLinks">
         <li><a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a></li>
         <li><a href="{%url 'product_list' %}" class="nav-link">Marketplace</a></li>
-        <li><a href="#about" class="nav-link">About</a></li>
-        <li><a href="#insights" class="nav-link">Insights</a></li>
+        <li><a href="{% url 'home'  %}#about" class="nav-link" id="aboutLink">About</a></li>
+        <li><a href="{% url 'home'  %}#insights" class="nav-link" id="insightsLink">Insights</a></li>
         {% if user.is_authenticated %}
-          {#<li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>#}
-          <li>
-            <form method="post" action="{% url 'logout' %}" style="display:inline">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-outline btn-sm">Logout</button>
-            </form>
-          </li>
-        {% else %}
+  <li>
+    <a href="{% url 'dashboard' %}" 
+       class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+       Dashboard
+    </a>
+  </li>
+  <li>
+    <a href="{% url 'cluster_list' %}" class="nav-link">Clusters</a>
+  </li>
+
+  <li>
+    <form method="post" action="{% url 'logout' %}" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline btn-sm">Logout</button>
+    </form>
+  </li>
+{% else %}
           <li><a href="{% url 'login' %}" class="btn btn-outline btn-sm">Login</a></li>
           <li><a href="{% url 'signup' %}" class="btn btn-primary btn-sm">Join Now</a></li>
         {% endif %}
@@ -105,6 +114,39 @@
       document.getElementById('navLinks').classList.toggle('open');
       this.classList.toggle('active');
     });
+ 
+    // Smooth scroll for anchor links when already on home page
+    // If on another page, the href="{% url 'home' %}#about" will
+    // navigate to home and then scroll — handled below
+    document.querySelectorAll('a[href*="#"]').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        const hash = href.includes('#') ? '#' + href.split('#')[1] : null;
+        if (!hash) return;
+ 
+        // Only intercept if we are already on the home page
+        const isHomePage = window.location.pathname === '/' ||
+                           window.location.pathname === '/home/';
+        if (isHomePage && href.includes(window.location.pathname)) {
+          const target = document.querySelector(hash);
+          if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+    });
+ 
+    // When page loads with a hash in the URL (e.g. after redirect to /#about)
+    // scroll to the section smoothly after a short delay
+    if (window.location.hash) {
+      setTimeout(function() {
+        const target = document.querySelector(window.location.hash);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+    }
   </script>
   {% block extra_js %}{% endblock %}
 </body>

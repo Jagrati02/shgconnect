@@ -125,11 +125,11 @@
               <label for="price_per_unit">Price per Unit (₹) <span class="req">*</span></label>
               <div class="input-prefix">
                 <span>₹</span>
-                <input type="number" id="price_per_unit" name="price_per_unit"
+                <input type="number" id="price" name="price"
                   placeholder="0.00" step="0.01" min="0"
-                  value="{{ form.price_per_unit.value|default:'' }}" required>
+                  value="{{ form.price.value|default:'' }}" required>
               </div>
-              {% if form.price_per_unit.errors %}<span class="form-error">{{ form.price_per_unit.errors.0 }}</span>{% endif %}
+              {% if form.price.errors %}<span class="form-error">{{ form.price.errors.0 }}</span>{% endif %}
             </div>
 
             <div class="form-group">
@@ -155,10 +155,10 @@
 
             <div class="form-group">
               <label for="available_stock">Available Stock <span class="req">*</span></label>
-              <input type="number" id="available_stock" name="available_stock"
+              <input type="number" id="available_stock" name="quantity_available"
                 placeholder="Total units available" min="1"
-                value="{{ form.available_stock.value|default:'' }}" required>
-              {% if form.available_stock.errors %}<span class="form-error">{{ form.available_stock.errors.0 }}</span>{% endif %}
+                value="{{ form.quantity_available.value|default:'' }}" required>
+              {% if form.quantity_available.errors %}<span class="form-error">{{ form.quantity_available.errors.0 }}</span>{% endif %}
             </div>
 
             <div class="form-group">
@@ -187,23 +187,23 @@
         <div class="fs-header">
           <span class="fs-num">03</span>
           <div>
-            <h3>Product Images</h3>
-            <p>Upload clear photos — good images increase orders by 3×.</p>
+            <h3>Product Image</h3>
+            <p>Upload a clear photo — good images increase orders by 3×.</p>
           </div>
         </div>
         <div class="fs-body">
           <div class="image-upload-zone" id="imageDropZone">
             <input type="file" id="image" name="image"
               accept="image/*" class="file-input-hidden">
-            <label for="product_images" class="upload-label">
+            <label for="image" class="upload-label">
               <span class="upload-icon">📸</span>
               <strong>Click to upload or drag & drop</strong>
-              <span>JPG, PNG, WEBP — Max 5MB each · Up to 5 images</span>
+              <span>JPG, PNG, WEBP — Max 5MB</span>
             </label>
             <div class="image-previews" id="imagePreviews"></div>
           </div>
-          {% if form.product_images.errors %}
-            <span class="form-error">{{ form.product_images.errors.0 }}</span>
+          {% if form.image.errors %}
+            <span class="form-error">{{ form.image.errors.0 }}</span>
           {% endif %}
         </div>
       </div>
@@ -325,7 +325,7 @@
 
 <script>
   // ── Price preview ──
-  const priceInput = document.getElementById('price_per_unit');
+  const priceInput = document.getElementById('price');
   const bulkInput  = document.getElementById('bulk_price');
   const moqInput   = document.getElementById('min_order_qty');
 

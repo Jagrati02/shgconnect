@@ -13,7 +13,7 @@
       <h1 class="ph-title">Explore SHG Products</h1>
       <p class="ph-sub">Handcrafted goods from verified self-help groups across India — ready for bulk ordering.</p>
     </div>
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and user.shgprofile %}
       <a href="{% url 'add_product' %}" class="btn btn-primary">+ List Your Product</a>
     {% endif %}
   </div>

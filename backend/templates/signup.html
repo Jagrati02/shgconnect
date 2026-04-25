@@ -47,40 +47,30 @@
           <div class="form-row">
             <div class="form-group">
               <label for="first_name">First Name</label>
-              <input type="text" id="first_name" name="first_name" placeholder="Rekha"
-                value="{{ form.first_name.value|default:'' }}" required>
-              {% if form.first_name.errors %}<span class="form-error">{{ form.first_name.errors.0 }}</span>{% endif %}
+              <input type="text" id="first_name" name="first_name" placeholder="Rekha" required>
             </div>
             <div class="form-group">
               <label for="last_name">Last Name</label>
-              <input type="text" id="last_name" name="last_name" placeholder="Devi"
-                value="{{ form.last_name.value|default:'' }}" required>
-              {% if form.last_name.errors %}<span class="form-error">{{ form.last_name.errors.0 }}</span>{% endif %}
+              <input type="text" id="last_name" name="last_name" placeholder="Devi" required>
             </div>
           </div>
 
           <div class="form-group" id="shg-name-group">
             <label for="shg_name">SHG / Organization Name</label>
-            <input type="text" id="shg_name" name="shg_name" placeholder="Mahila Udyog SHG"
-              value="{{ form.shg_name.value|default:'' }}">
-            {% if form.shg_name.errors %}<span class="form-error">{{ form.shg_name.errors.0 }}</span>{% endif %}
+            <input type="text" id="shg_name" name="shg_name" placeholder="Mahila Udyog SHG">
           </div>
 
           <div class="form-group">
             <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" placeholder="you@example.com"
-              value="{{ form.email.value|default:'' }}" required>
-            {% if form.email.errors %}<span class="form-error">{{ form.email.errors.0 }}</span>{% endif %}
+            <input type="email" id="email" name="email" placeholder="you@example.com" required>
           </div>
 
           <div class="form-group">
             <label for="phone">Mobile Number</label>
             <div class="input-prefix">
               <span>+91</span>
-              <input type="tel" id="phone" name="phone" placeholder="9876543210"
-                value="{{ form.phone.value|default:'' }}" maxlength="10" required>
+              <input type="tel" id="phone" name="phone" placeholder="9876543210" maxlength="10" required>
             </div>
-            {% if form.phone.errors %}<span class="form-error">{{ form.phone.errors.0 }}</span>{% endif %}
           </div>
 
           <div class="form-group">
@@ -100,7 +90,6 @@
                 <option value="GJ">Gujarat</option>
               {% endfor %}
             </select>
-            {% if form.state.errors %}<span class="form-error">{{ form.state.errors.0 }}</span>{% endif %}
           </div>
 
           <div class="form-row">
@@ -110,7 +99,6 @@
                 <input type="password" id="password1" name="password1" placeholder="Min. 8 characters" required>
                 <button type="button" class="toggle-pw" data-target="password1" tabindex="-1">👁</button>
               </div>
-              {% if form.password1.errors %}<span class="form-error">{{ form.password1.errors.0 }}</span>{% endif %}
             </div>
             <div class="form-group">
               <label for="password2">Confirm Password</label>
@@ -118,7 +106,6 @@
                 <input type="password" id="password2" name="password2" placeholder="Repeat password" required>
                 <button type="button" class="toggle-pw" data-target="password2" tabindex="-1">👁</button>
               </div>
-              {% if form.password2.errors %}<span class="form-error">{{ form.password2.errors.0 }}</span>{% endif %}
             </div>
           </div>
 
@@ -126,10 +113,6 @@
             <input type="checkbox" id="terms" name="terms" required>
             <label for="terms">I agree to the <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a></label>
           </div>
-
-          {% if form.non_field_errors %}
-            <div class="form-error-box">{{ form.non_field_errors }}</div>
-          {% endif %}
 
           <button type="submit" class="btn btn-primary btn-full btn-lg">Create My Account →</button>
         </form>

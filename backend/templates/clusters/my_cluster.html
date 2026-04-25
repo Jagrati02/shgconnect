@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Cluster — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">My Network</span>
+      <h1 class="ph-title">My Cluster</h1>
+      <p class="ph-sub">Your SHG's position in the ML cluster network.</p>
+    </div>
+    <a href="{% url 'cluster_list' %}" class="btn btn-outline btn-sm">View All Clusters</a>
+  </div>
+</div>
+
+<div class="container" style="padding-top:32px; padding-bottom:60px; max-width:900px;">
+
+  {% if cluster %}
+
+    <!-- CLUSTER CARD -->
+    <div class="dash-card" style="margin-bottom:24px;">
+      <div class="dc-header">
+        <h3>🧩 {{ cluster.name }}</h3>
+        <span class="badge badge-cluster">Cluster {{ cluster.label }}</span>
+      </div>
+      <div style="padding:24px;">
+        <p style="font-size:0.95rem; color:var(--ink-mid); margin-bottom:20px;">
+          {{ cluster.description }}
+        </p>
+        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="kpi-card">
+            <div class="kpi-icon">🧩</div>
+            <div class="kpi-body">
+              <span class="kpi-label">SHGs in Cluster</span>
+              <span class="kpi-value">{{ cluster.total_shgs }}</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">⚡</div>
+            <div class="kpi-body">
+              <span class="kpi-label">Combined Capacity</span>
+              <span class="kpi-value">{{ cluster.total_capacity }}</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-body">
+              <span class="kpi-label">Avg Savings</span>
+              <span class="kpi-value">₹{{ cluster.avg_savings|floatformat:0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- YOUR SHG IN THIS CLUSTER -->
+    <div class="dash-card" style="margin-bottom:24px;">
+      <div class="dc-header"><h3>👤 Your SHG</h3></div>
+      <div style="padding:20px 24px; display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+          <span style="color:var(--ink-soft);">SHG Name</span>
+          <strong>{{ shg.shg_name }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+          <span style="color:var(--ink-soft);">State</span>
+          <strong>{{ shg.state }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+          <span style="color:var(--ink-soft);">Members</span>
+          <strong>{{ shg.members_count|default:"—" }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+          <span style="color:var(--ink-soft);">Primary Livelihood</span>
+          <strong>{{ membership.primary_livelihood|default:"—"|title }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+          <span style="color:var(--ink-soft);">Cluster Assignment</span>
+          <span class="badge badge-cluster">Cluster {{ cluster.label }} — {{ cluster.name }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEARBY SHGs IN SAME CLUSTER + STATE -->
+    {% if siblings %}
+    <div class="dash-card">
+      <div class="dc-header">
+        <h3>🤝 Nearby SHGs in Your Cluster</h3>
+        <span style="font-size:0.82rem; color:var(--ink-soft);">Same cluster · Same state</span>
+      </div>
+      <div class="dp-table-wrap" style="border:none; border-radius:0; box-shadow:none;">
+        <table class="dp-table">
+          <thead>
+            <tr>
+              <th>SHG Name</th>
+              <th>District</th>
+              <th>Livelihood</th>
+              <th>Members</th>
+              <th>Savings (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in siblings %}
+              <tr class="dpt-row">
+                <td><strong style="font-size:0.85rem;">{{ s.shg_name }}</strong></td>
+                <td class="dpt-date">{{ s.district }}</td>
+                <td><span class="dpt-cat">{{ s.primary_livelihood|title }}</span></td>
+                <td class="dpt-orders">{{ s.active_members }}</td>
+                <td class="dpt-price">{{ s.savings_amount|floatformat:0 }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  {% else %}
+
+    <!-- NOT YET ASSIGNED -->
+    <div class="empty-state">
+      <span class="es-icon">🧩</span>
+      <h3>Not yet assigned to a cluster</h3>
+      <p>
+        Your SHG hasn't been assigned to a cluster yet.
+        The ML model processes cluster assignments periodically.
+        Check back soon.
+      </p>
+      <a href="{% url 'cluster_list' %}" class="btn btn-primary">Browse All Clusters</a>
+    </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}

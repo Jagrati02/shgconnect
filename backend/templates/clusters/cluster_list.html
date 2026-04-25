@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SHG Cluster Network — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Cluster Network</span>
+      <h1 class="ph-title">SHG Cluster Network</h1>
+      <p class="ph-sub">
+        SHGs are grouped by what they produce. Buyers can place large bulk
+        orders that get fulfilled collectively by multiple SHGs in the same cluster.
+      </p>
+    </div>
+    {% if user.is_authenticated %}
+      {% if user.shgprofile %}
+        <a href="{% url 'my_cluster' %}" class="btn btn-primary">My Cluster →</a>
+      {% else %}
+        <a href="{% url 'product_list' %}" class="btn btn-primary">Browse Products →</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- HOW IT WORKS STRIP -->
+<div style="background:var(--cream-dark); border-bottom:1px solid var(--border); padding:28px 0;">
+  <div class="container">
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px; text-align:center;">
+      <div>
+        <div style="font-size:1.8rem; margin-bottom:8px;">🧩</div>
+        <strong style="display:block; font-size:0.92rem; color:var(--ink); margin-bottom:4px;">SHGs are grouped</strong>
+        <span style="font-size:0.83rem; color:var(--ink-soft);">by livelihood — agriculture, manufacturing, fishery, and more</span>
+      </div>
+      <div>
+        <div style="font-size:1.8rem; margin-bottom:8px;">📦</div>
+        <strong style="display:block; font-size:0.92rem; color:var(--ink); margin-bottom:4px;">Buyers place bulk orders</strong>
+        <span style="font-size:0.83rem; color:var(--ink-soft);">larger than any single SHG can handle — the cluster fulfils it together</span>
+      </div>
+      <div>
+        <div style="font-size:1.8rem; margin-bottom:8px;">💰</div>
+        <strong style="display:block; font-size:0.92rem; color:var(--ink); margin-bottom:4px;">Fair revenue split</strong>
+        <span style="font-size:0.83rem; color:var(--ink-soft);">each SHG gets paid proportionally to what it contributed</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NETWORK SUMMARY CARDS -->
+<div class="container" style="padding-top:32px;">
+  <div class="order-summary-grid" style="margin-bottom:32px;">
+    <div class="os-card">
+      <span class="os-icon">🧩</span>
+      <div>
+        <span class="os-num">{{ clusters|length }}</span>
+        <span class="os-label">Specialisation Groups</span>
+      </div>
+    </div>
+    <div class="os-card os-card-highlight">
+      <span class="os-icon">👥</span>
+      <div>
+        <span class="os-num">{{ total_shgs|default:"51,000" }}+</span>
+        <span class="os-label">SHGs in Network</span>
+      </div>
+    </div>
+    <div class="os-card">
+      <span class="os-icon">🗺️</span>
+      <div>
+        <span class="os-num">{{ total_states|default:"18" }}</span>
+        <span class="os-label">States Covered</span>
+      </div>
+    </div>
+    <div class="os-card">
+      <span class="os-icon">⚡</span>
+      <div>
+        <span class="os-num">{{ total_capacity|default:"5,70,000" }}+</span>
+        <span class="os-label">Combined Capacity</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLUSTER CARDS GRID -->
+<div class="container" style="padding-bottom:60px;">
+
+  {% if message %}
+    <div class="alert alert-info" style="margin-bottom:24px;">
+      <span>{{ message }}</span>
+    </div>
+  {% endif %}
+
+  <div class="cluster-cards-grid">
+    {% for cluster in clusters %}
+
+      <div class="cluster-card" style="cursor:default;">
+
+        <!-- Icon + size -->
+        <div class="cc-header">
+          <div style="font-size:2rem;">
+            {% if cluster.primary_livelihood == 'agriculture' %}🌾
+            {% elif cluster.primary_livelihood == 'livestock' %}🐄
+            {% elif cluster.primary_livelihood == 'manufacturing' %}🏭
+            {% elif cluster.primary_livelihood == 'fishery' %}🐟
+            {% elif cluster.primary_livelihood == 'horticulture' %}🌿
+            {% elif cluster.primary_livelihood == 'trading' %}🛒
+            {% elif cluster.primary_livelihood == 'services' %}⚙️
+            {% elif cluster.primary_livelihood == 'live_aggregation' %}🔗
+            {% elif cluster.primary_livelihood == 'custom_hiring' %}🚜
+            {% else %}🧺
+            {% endif %}
+          </div>
+          <div class="cc-size">{{ cluster.total_shgs|default:0 }} SHGs</div>
+        </div>
+
+        <h3 class="cc-name">{{ cluster.name }}</h3>
+
+        <div class="cc-livelihood">
+          <span class="badge badge-cluster" style="font-size:0.75rem;">
+            {{ cluster.primary_livelihood|title }}
+          </span>
+        </div>
+
+        <p class="cc-desc">{{ cluster.description|truncatechars:110 }}</p>
+
+        <!-- Capacity info -->
+        <div style="background:var(--cream); border-radius:var(--radius-sm); padding:12px 14px; margin:4px 0;">
+          <span style="font-size:0.75rem; font-weight:700; text-transform:uppercase;
+                       letter-spacing:.06em; color:var(--ink-soft); display:block; margin-bottom:6px;">
+            Cluster capacity
+          </span>
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+            <span style="color:var(--ink-soft);">Avg members / SHG</span>
+            <strong>{{ cluster.avg_members|floatformat:0 }}</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-top:4px;">
+            <span style="color:var(--ink-soft);">Total workforce</span>
+            <strong>{{ cluster.total_capacity|default:0 }}</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-top:4px;">
+            <span style="color:var(--ink-soft);">Avg savings / SHG</span>
+            <strong>₹{{ cluster.avg_savings|floatformat:0 }}</strong>
+          </div>
+        </div>
+
+        <!-- Capacity bar -->
+        <div class="cc-bar-wrap">
+          <div class="cc-bar" data-width="{{ cluster.capacity_score }}"></div>
+        </div>
+        <div class="cc-bar-label">{{ cluster.capacity_score }}% of total network capacity</div>
+
+        <!-- Action buttons -->
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <a href="{% url 'cluster_detail' cluster.label %}"
+             class="btn btn-outline btn-sm"
+             style="flex:1; justify-content:center; border-radius:var(--radius-sm);">
+            View SHGs
+          </a>
+          {% if user.is_authenticated and user.buyerprofile %}
+            <a href="{% url 'product_list' %}"
+               class="btn btn-primary btn-sm"
+               style="flex:1; justify-content:center; border-radius:var(--radius-sm);">
+              Order Now
+            </a>
+          {% endif %}
+        </div>
+
+      </div>
+
+    {% empty %}
+      <div class="empty-state" style="grid-column:1/-1; padding:80px 24px;">
+        <span class="es-icon">🧩</span>
+        <h3>Cluster data not loaded yet</h3>
+        <p>Run the following command to import cluster data:</p>
+        <code style="background:var(--cream-dark); padding:10px 20px; border-radius:8px;
+                     font-size:0.85rem; display:inline-block; margin-top:8px;">
+          python manage.py import_clusters
+        </code>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- CTA FOR BUYERS -->
+{% if user.is_authenticated and user.buyerprofile %}
+<div style="background:linear-gradient(130deg,#2C1A0E,var(--clay-dark)); padding:60px 0;">
+  <div class="container" style="text-align:center; color:var(--white);">
+    <h2 style="font-family:var(--ff-head); font-size:1.8rem; margin-bottom:12px;">
+      Ready to place a bulk order?
+    </h2>
+    <p style="color:rgba(255,255,255,.7); margin-bottom:28px; max-width:500px;
+              margin-left:auto; margin-right:auto;">
+      Find a product, set the quantity you need — even if it exceeds one SHG's
+      capacity — and the cluster fulfils it together.
+    </p>
+    <a href="{% url 'product_list' %}" class="btn btn-white btn-lg">Browse Products →</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- CTA FOR SHGs -->
+{% if user.is_authenticated and user.shgprofile %}
+<div style="background:var(--green-lt); border-top:1px solid rgba(58,125,68,.2); padding:48px 0;">
+  <div class="container" style="text-align:center;">
+    <h2 style="font-family:var(--ff-head); font-size:1.6rem; color:var(--ink); margin-bottom:10px;">
+      Your SHG in the network
+    </h2>
+    <p style="color:var(--ink-soft); margin-bottom:24px; max-width:480px;
+              margin-left:auto; margin-right:auto;">
+      See which cluster your SHG belongs to and who your partner SHGs are.
+    </p>
+    <a href="{% url 'my_cluster' %}" class="btn btn-primary btn-lg">View My Cluster →</a>
+  </div>
+</div>
+{% endif %}
+
+<script>
+document.querySelectorAll('[data-width]').forEach(el => {
+  el.style.width = (el.dataset.width || 0) + '%';
+});
+</script>
+
+{% endblock %}

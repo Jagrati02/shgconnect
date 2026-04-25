@@ -48,11 +48,11 @@
               id="username"
               name="username"
               placeholder="you@example.com or 9876543210"
-              value="{{ form.username.value|default:'' }}"
+              
               autocomplete="username"
               required
             >
-            {% if form.username.errors %}<span class="form-error">{{ form.username.errors.0 }}</span>{% endif %}
+            
           </div>
 
           <div class="form-group">
@@ -71,7 +71,7 @@
               >
               <button type="button" class="toggle-pw" data-target="password" tabindex="-1">👁</button>
             </div>
-            {% if form.password.errors %}<span class="form-error">{{ form.password.errors.0 }}</span>{% endif %}
+            
           </div>
 
           <div class="form-check">
@@ -79,12 +79,12 @@
             <label for="remember">Keep me logged in for 30 days</label>
           </div>
 
-          {% if form.non_field_errors %}
-            <div class="form-error-box">
-              {% for error in form.non_field_errors %}
-                <p>{{ error }}</p>
-              {% endfor %}
-            </div>
+          {% if messages %}
+            {% for message in messages %}
+              {% if message.tags == "error" %}
+                <div class="form-error-box"><p>{{ message }}</p></div>
+              {% endif %}
+            {% endfor %}
           {% endif %}
 
           <button type="submit" class="btn btn-primary btn-full btn-lg">Log In →</button>

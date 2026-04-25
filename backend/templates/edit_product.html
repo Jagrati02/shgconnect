@@ -38,14 +38,14 @@
 
       <!-- ─ STATUS BANNER ─ -->
       <div class="edit-status-bar
-        {% if product.status == 'published' %}esb-published
-        {% elif product.status == 'draft' %}esb-draft
+        {% if product.is_active %}esb-published
+        {% elif not product.is_active %}esb-draft
         {% else %}esb-review{% endif %}">
         <div class="esb-left">
           <span class="esb-dot"></span>
           <span class="esb-label">
-            {% if product.status == 'published' %}Published — visible to buyers
-            {% elif product.status == 'draft' %}Draft — not visible to buyers
+            {% if product.is_active %}Published — visible to buyers
+            {% elif not product.is_active %}Draft — not visible to buyers
             {% else %}Under Review{% endif %}
           </span>
         </div>
@@ -166,12 +166,12 @@
               <label for="price_per_unit">Price per Unit (₹) <span class="req">*</span></label>
               <div class="input-prefix">
                 <span>₹</span>
-                <input type="number" id="price_per_unit" name="price_per_unit"
+                <input type="number" id="price" name="price"
                   placeholder="0.00" step="0.01" min="0"
-                  value="{{ form.price_per_unit.value|default:product.price_per_unit }}"
+                  value="{{ form.price.value|default:product.price }}"
                   required>
               </div>
-              {% if form.price_per_unit.errors %}<span class="form-error">{{ form.price_per_unit.errors.0 }}</span>{% endif %}
+              {% if form.price.errors %}<span class="form-error">{{ form.price.errors.0 }}</span>{% endif %}
             </div>
 
             <div class="form-group">
@@ -198,11 +198,11 @@
 
             <div class="form-group">
               <label for="available_stock">Available Stock <span class="req">*</span></label>
-              <input type="number" id="available_stock" name="available_stock"
+              <input type="number" id="available_stock" name="quantity_available"
                 placeholder="Total units available" min="0"
-                value="{{ form.available_stock.value|default:product.available_stock }}"
+                value="{{ form.quantity_available.value|default:product.quantity_available }}"
                 required>
-              {% if form.available_stock.errors %}<span class="form-error">{{ form.available_stock.errors.0 }}</span>{% endif %}
+              {% if form.quantity_available.errors %}<span class="form-error">{{ form.quantity_available.errors.0 }}</span>{% endif %}
             </div>
 
             <div class="form-group">
@@ -238,13 +238,13 @@
         <div class="fs-body">
 
           <!-- Existing images -->
-          {% if product.images.all %}
+          {% if product.image %}
             <div class="existing-images-wrap">
               <p class="existing-label">Current Images</p>
               <div class="existing-images-grid">
-                {% for img in product.images.all %}
+                
                   <div class="existing-img-card" id="imgCard{{ img.pk }}">
-                    <img src="{{ img.image.url }}" alt="Product image {{ forloop.counter }}">
+                    <img src="{{ product.image.url }}" alt="Product image {{ forloop.counter }}">
                     <button
                       type="button"
                       class="eic-delete"
@@ -271,8 +271,8 @@
             </label>
             <div class="image-previews" id="imagePreviews"></div>
           </div>
-          {% if form.product_images.errors %}
-            <span class="form-error">{{ form.product_images.errors.0 }}</span>
+          {% if form.image.errors %}
+            <span class="form-error">{{ form.image.errors.0 }}</span>
           {% endif %}
 
         </div>
@@ -350,7 +350,7 @@
               </div>
               <button type="submit" name="action" value="unpublish"
                 class="btn btn-outline btn-sm dz-btn"
-                {% if product.status != 'published' %}disabled{% endif %}>
+                {% if not product.is_active %}disabled{% endif %}>
                 Unpublish
               </button>
             </div>
@@ -404,7 +404,7 @@
           <span class="ep-stat-label">Reviews</span>
         </div>
         <div class="ep-stat">
-          <span class="ep-stat-num">{{ product.available_stock|default:0 }}</span>
+          <span class="ep-stat-num">{{ product.quantity_available|default:0 }}</span>
           <span class="ep-stat-label">Stock Left</span>
         </div>
         <div class="ep-stat">
@@ -481,7 +481,7 @@
 
 <script>
   /* ── Price preview ── */
-  const priceInput = document.getElementById('price_per_unit');
+  const priceInput = document.getElementById('price');
   const bulkInput  = document.getElementById('bulk_price');
   const moqInput   = document.getElementById('min_order_qty');
 

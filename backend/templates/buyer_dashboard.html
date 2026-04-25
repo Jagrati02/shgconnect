@@ -179,22 +179,24 @@
                     <div class="ao-product">
                       <span class="ao-icon">📦</span>
                       <div>
-                        <strong>{{ order.product.name }}</strong>
-                        <span>{{ order.quantity }} units · ₹{{ order.total_amount }}</span>
+                        {% with fi=order.items.first %}
+                        <strong>{% if fi %}{{ fi.product.name }}{% else %}Order #{{ order.pk }}{% endif %}</strong>
+                        <span>{% if fi %}{{ fi.quantity }} units · {% endif %}₹{{ order.total_price }}</span>
+                        {% endwith %}
                       </div>
                     </div>
-                    <span class="status-pill status-{{ order.status|lower }}">{{ order.status|title }}</span>
+                    <span class="status-pill status-{{ order.order_status|lower }}">{{ order.get_order_status_display }}</span>
                   </div>
                   <!-- Mini progress bar -->
                   <div class="ao-progress">
                     <div class="ao-steps">
-                      <span class="ao-step {% if order.status in 'pending,confirmed,transit,delivered' %}ao-done{% endif %}">Ordered</span>
-                      <span class="ao-line {% if order.status in 'confirmed,transit,delivered' %}ao-done{% endif %}"></span>
-                      <span class="ao-step {% if order.status in 'confirmed,transit,delivered' %}ao-done{% endif %}">Confirmed</span>
-                      <span class="ao-line {% if order.status in 'transit,delivered' %}ao-done{% endif %}"></span>
-                      <span class="ao-step {% if order.status in 'transit,delivered' %}ao-done{% endif %}">In Transit</span>
-                      <span class="ao-line {% if order.status == 'delivered' %}ao-done{% endif %}"></span>
-                      <span class="ao-step {% if order.status == 'delivered' %}ao-done{% endif %}">Delivered</span>
+                      <span class="ao-step {% if order.order_status == 'PENDING' or order.order_status == 'CONFIRMED' or order.order_status == 'SHIPPED' or order.order_status == 'DELIVERED' %}ao-done{% endif %}">Ordered</span>
+                      <span class="ao-line {% if order.order_status == 'CONFIRMED' or order.order_status == 'SHIPPED' or order.order_status == 'DELIVERED' %}ao-done{% endif %}"></span>
+                      <span class="ao-step {% if order.order_status == 'CONFIRMED' or order.order_status == 'SHIPPED' or order.order_status == 'DELIVERED' %}ao-done{% endif %}">Confirmed</span>
+                      <span class="ao-line {% if order.order_status == 'SHIPPED' or order.order_status == 'DELIVERED' %}ao-done{% endif %}"></span>
+                      <span class="ao-step {% if order.order_status == 'SHIPPED' or order.order_status == 'DELIVERED' %}ao-done{% endif %}">In Transit</span>
+                      <span class="ao-line {% if order.order_status == 'DELIVERED' %}ao-done{% endif %}"></span>
+                      <span class="ao-step {% if order.order_status == 'DELIVERED' %}ao-done{% endif %}">Delivered</span>
                     </div>
                   </div>
                 </div>
@@ -225,17 +227,19 @@
               {% for order in recent_orders %}
                 <div class="mo-row">
                   <div class="mo-thumb">
-                    {% if order.product.images.first %}
-                      <img src="{{ order.product.images.first.image.url }}" alt="">
+                    {% if order.product.image %}
+                      <img src="{{ order.product.image.url }}" alt="">
                     {% else %}<span>🧺</span>{% endif %}
                   </div>
                   <div class="mo-info">
-                    <strong>{{ order.product.name }}</strong>
-                    <span>{{ order.quantity }} units · {{ order.created_at|date:"d M" }}</span>
+                    {% with fi=order.items.first %}
+                      <strong>{% if fi %}{{ fi.product.name }}{% else %}Order #{{ order.pk }}{% endif %}</strong>
+                      <span>{% if fi %}{{ fi.quantity }} units · {% endif %}{{ order.order_date|date:"d M" }}</span>
+                    {% endwith %}
                   </div>
                   <div class="mo-right">
-                    <span class="status-pill status-{{ order.status|lower }}">{{ order.status|title }}</span>
-                    <span class="mo-amount">₹{{ order.total_amount }}</span>
+                    <span class="status-pill status-{{ order.order_status|lower }}">{{ order.get_order_status_display }}</span>
+                    <span class="mo-amount">₹{{ order.total_price }}</span>
                   </div>
                 </div>
               {% endfor %}
@@ -256,14 +260,14 @@
               {% for product in recommended_products|slice:":4" %}
                 <div class="aip-row">
                   <div class="aip-img">
-                    {% if product.images.first %}
-                      <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}">
+                    {% if product.image %}
+                      <img src="{{ product.image.url }}" alt="{{ product.name }}">
                     {% else %}<span>🧺</span>{% endif %}
                   </div>
                   <div class="aip-info">
                     <strong>{{ product.name }}</strong>
-                    <span>{{ product.shg.name }} · {{ product.shg.state }}</span>
-                    <span class="aip-price">₹{{ product.price_per_unit }}/{{ product.unit|default:"unit" }}</span>
+                    <span>{{ product.shg.shg_name }} · {{ product.shg.state }}</span>
+                    <span class="aip-price">₹{{ product.price }}/{{ product.unit|default:"unit" }}</span>
                   </div>
                   <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline btn-sm">View</a>
                 </div>
@@ -382,8 +386,8 @@
                     <td><span class="tp-rank {% if forloop.first %}gold-rank{% endif %}">{{ forloop.counter }}</span></td>
                     <td>
                       <div class="dpt-product">
-                        {% if item.product.images.first %}
-                          <img src="{{ item.product.images.first.image.url }}" alt="" class="dpt-thumb">
+                        {% if item.product.image %}
+                          <img src="{{ item.product.image.url }}" alt="" class="dpt-thumb">
                         {% else %}
                           <div class="dpt-thumb-ph">🧺</div>
                         {% endif %}
@@ -393,7 +397,7 @@
                         </div>
                       </div>
                     </td>
-                    <td class="dpt-buyer">{{ item.product.shg.name }}</td>
+                    <td class="dpt-buyer">{{ item.product.shg.shg_name }}</td>
                     <td class="dpt-orders">{{ item.order_count }}</td>
                     <td class="dpt-orders">{{ item.total_units }}</td>
                     <td class="dpt-price">₹{{ item.total_spent }}</td>
@@ -429,8 +433,8 @@
           {% for item in wishlist_items %}
             <div class="wl-card" id="wlCard{{ item.product.pk }}">
               <div class="pc-image-wrap">
-                {% if item.product.images.first %}
-                  <img src="{{ item.product.images.first.image.url }}" alt="{{ item.product.name }}" class="pc-image">
+                {% if item.product.image %}
+                  <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="pc-image">
                 {% else %}
                   <div class="pc-image-placeholder"><span>🧺</span></div>
                 {% endif %}
@@ -439,7 +443,7 @@
                   {% if item.product.is_trending %}<span class="badge badge-trend">📈 Trending</span>{% endif %}
                 </div>
                 <!-- Remove from wishlist -->
-                <form method="post" action="{% url 'remove_wishlist' item.product.pk %}">
+                <form method="post" action="#">
                   {% csrf_token %}
                   <button type="submit" class="pc-fav wl-remove" title="Remove from wishlist">♥</button>
                 </form>
@@ -451,7 +455,7 @@
                 </h3>
                 <div class="pc-shg">
                   <span class="shg-dot">⬡</span>
-                  {{ item.product.shg.name }} · {{ item.product.shg.state }}
+                  {{ item.product.shg.shg_name }} · {{ item.product.shg.state }}
                 </div>
 
                 <!-- Price change indicator -->
@@ -467,7 +471,7 @@
 
                 <div class="pc-footer">
                   <div class="pc-pricing">
-                    <span class="pc-price">₹{{ item.product.price_per_unit }}</span>
+                    <span class="pc-price">₹{{ item.product.price }}</span>
                     <span class="pc-unit">/ {{ item.product.unit|default:"unit" }}</span>
                   </div>
                   <div class="pc-moq">Min. <strong>{{ item.product.min_order_qty|default:50 }}</strong></div>
@@ -514,8 +518,8 @@
           {% for product in recommended_products %}
             <div class="product-card">
               <div class="pc-image-wrap">
-                {% if product.images.first %}
-                  <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}" class="pc-image" loading="lazy">
+                {% if product.image %}
+                  <img src="{{ product.image.url }}" alt="{{ product.name }}" class="pc-image" loading="lazy">
                 {% else %}
                   <div class="pc-image-placeholder"><span>🧺</span></div>
                 {% endif %}
@@ -528,7 +532,7 @@
               <div class="pc-body">
                 <div class="pc-category">{{ product.category }}</div>
                 <h3 class="pc-name"><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></h3>
-                <div class="pc-shg"><span class="shg-dot">⬡</span>{{ product.shg.name }} · {{ product.shg.state }}</div>
+                <div class="pc-shg"><span class="shg-dot">⬡</span>{{ product.shg.shg_name }} · {{ product.shg.state }}</div>
                 {% if product.demand_score %}
                   <div class="pc-demand">
                     <span class="demand-label">Demand</span>
@@ -538,7 +542,7 @@
                 {% endif %}
                 <div class="pc-footer">
                   <div class="pc-pricing">
-                    <span class="pc-price">₹{{ product.price_per_unit }}</span>
+                    <span class="pc-price">₹{{ product.price }}</span>
                     <span class="pc-unit">/ {{ product.unit|default:"unit" }}</span>
                   </div>
                   <div class="pc-moq">Min. <strong>{{ product.min_order_qty|default:50 }}</strong></div>
@@ -617,16 +621,18 @@
             <tbody>
               {% for order in bulk_orders %}
                 <tr class="dpt-row">
-                  <td><span class="dpt-id">#{{ order.order_id|default:order.pk }}</span></td>
+                  <td><span class="dpt-id">#{{ order.pk }}</span></td>
                   <td>
                     <div class="dpt-product">
                       <div class="dpt-thumb-ph">🧺</div>
-                      <strong>{{ order.product.name }}</strong>
+                      {% with fi=order.items.first %}
+                      <strong>{% if fi %}{{ fi.product.name }}{% else %}Order #{{ order.pk }}{% endif %}</strong>
+                      {% endwith %}
                     </div>
                   </td>
-                  <td class="dpt-orders">{{ order.quantity }}</td>
-                  <td class="dpt-price">₹{{ order.unit_price }}</td>
-                  <td class="dpt-price">₹{{ order.total_amount }}</td>
+                  <td class="dpt-orders">{% for item in order.items.all %}{{ item.quantity }}{% if not forloop.last %}+{% endif %}{% endfor %}</td>
+                  <td class="dpt-price">{% with fi=order.items.first %}{% if fi %}₹{{ fi.price }}{% else %}—{% endif %}{% endwith %}</td>
+                  <td class="dpt-price">₹{{ order.total_price }}</td>
                   <td>
                     {% if order.cluster_used %}
                       <span class="badge badge-cluster" style="font-size:0.72rem;">⬡ {{ order.cluster_size }} SHGs</span>
@@ -634,8 +640,8 @@
                       <span style="font-size:0.8rem; color:var(--ink-soft);">Direct</span>
                     {% endif %}
                   </td>
-                  <td><span class="status-pill status-{{ order.status|lower }}">{{ order.status|title }}</span></td>
-                  <td class="dpt-date">{{ order.created_at|date:"d M Y" }}</td>
+                  <td><span class="status-pill status-{{ order.order_status|lower }}">{{ order.get_order_status_display }}</span></td>
+                  <td class="dpt-date">{{ order.order_date|date:"d M Y" }}</td>
                   <td><a href="{% url 'order_detail' order.pk %}" class="dpt-btn" title="View">👁</a></td>
                 </tr>
               {% endfor %}
@@ -666,18 +672,18 @@
           {% for item in reorder_products %}
             <div class="ro-card">
               <div class="ro-img">
-                {% if item.product.images.first %}
-                  <img src="{{ item.product.images.first.image.url }}" alt="">
+                {% if item.product.image %}
+                  <img src="{{ item.product.image.url }}" alt="">
                 {% else %}
                   <span>🧺</span>
                 {% endif %}
               </div>
               <div class="ro-info">
                 <strong>{{ item.product.name }}</strong>
-                <span>{{ item.product.shg.name }}</span>
+                <span>{{ item.product.shg.shg_name }}</span>
                 <div class="ro-last">Last ordered {{ item.last_ordered|date:"d M Y" }} · {{ item.last_qty }} units</div>
               </div>
-              <div class="ro-price">₹{{ item.product.price_per_unit }}<small>/{{ item.product.unit|default:"unit" }}</small></div>
+              <div class="ro-price">₹{{ item.product.price }}<small>/{{ item.product.unit|default:"unit" }}</small></div>
               <a href="{% url 'place_order' item.product.pk %}" class="btn btn-primary btn-sm ro-btn">
                 🔁 Reorder
               </a>
