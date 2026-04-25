@@ -1,15 +1,30 @@
-asgiref==3.11.1
+# ── Django Core ──────────────────────────────────────────────
 Django==6.0.3
-django-crispy-forms==2.6
-joblib==1.5.3
-numpy==2.4.3
-pandas==3.0.1
-pillow==12.1.1
-psycopg2-binary==2.9.11
-python-dateutil==2.9.0.post0
-scikit-learn==1.8.0
-scipy==1.17.1
-six==1.17.0
-sqlparse==0.5.5
-threadpoolctl==3.6.0
-tzdata==2025.3
+
+# ── Database ─────────────────────────────────────────────────
+# SQLite is built into Python — no package needed for development
+# For production PostgreSQL, uncomment:
+# psycopg2-binary==2.9.9
+
+# ── Image Handling ───────────────────────────────────────────
+Pillow==10.4.0
+
+# ── Excel File Reading ───────────────────────────────────────
+openpyxl==3.1.5
+
+# ── ML / Data Science (for Jupyter notebooks only) ───────────
+# These are NOT required to run the Django server
+# Only needed when running notebooks/shg_clustering.py etc.
+numpy==2.1.3
+pandas==2.2.3
+scikit-learn==1.5.2
+matplotlib==3.9.2
+seaborn==0.13.2
+
+# ── Jupyter Notebook ─────────────────────────────────────────
+# Only needed locally for ML work — not required on GitHub/server
+jupyter==1.1.1
+notebook==7.3.2
+
+# ── Python Utilities ─────────────────────────────────────────
+python-dotenv==1.0.1

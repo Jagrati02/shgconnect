@@ -1,23 +1,60 @@
-# Python
+# ── Python ───────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
 
-# Virtual Environment
+# ── Virtual Environment ──────────────────────────────────────
 venv/
 env/
+.venv/
+ENV/
 
-# Django
-db.sqlite3
+# ── Django ───────────────────────────────────────────────────
 *.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# ── Media files (user uploads — not committed to git) ────────
 media/
 
-# VS Code
-.vscode/
+# ── Static collected files ───────────────────────────────────
+staticfiles/
+static_root/
 
-# OS
+# ── Environment variables ────────────────────────────────────
+.env
+.env.local
+.env.production
+
+# ── Jupyter Notebooks ────────────────────────────────────────
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# ── ML / Data files (too large for git) ──────────────────────
+data/shg_data.xlsx
+data/shg_combined.csv
+data/cluster_results.csv
+*.pkl
+*.joblib
+
+# ── Generated research figures ───────────────────────────────
+data/*.png
+data/*.txt
+
+# ── IDE ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
 .DS_Store
 Thumbs.db
 
-# Environment variables
-.env
+# ── OS ───────────────────────────────────────────────────────
+.DS_Store
+desktop.ini
