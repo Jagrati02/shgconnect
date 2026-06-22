@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Allocation Plan — {{ product.name }} — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumb-bar">
+  <div class="container breadcrumb-inner">
+    <a href="{% url 'home' %}">Home</a>
+    <span class="bc-sep">›</span>
+    <a href="{% url 'product_list' %}">Marketplace</a>
+    <span class="bc-sep">›</span>
+    <a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a>
+    <span class="bc-sep">›</span>
+    <span class="bc-current">Allocation Plan</span>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Proportional Allocation</span>
+      <h1 class="ph-title">Cluster Allocation Plan</h1>
+      <p class="ph-sub">
+        How a bulk order of <strong>{{ plan.quantity }}</strong> units of
+        <strong>{{ product.name }}</strong> would be distributed across the
+        matching livelihood cluster. This is a preview — no order is placed.
+      </p>
+    </div>
+    <a href="{% url 'place_order' product.pk %}" class="btn btn-outline btn-sm">← Back to Order</a>
+  </div>
+</div>
+
+<div class="container" style="padding-top:32px; padding-bottom:60px;">
+
+  {% if plan.error %}
+    <div class="dash-card">
+      <div style="padding:28px; color:var(--ink-soft);">
+        <strong>Cluster allocation unavailable.</strong>
+        <p style="margin-top:8px;">{{ plan.error }}</p>
+      </div>
+    </div>
+  {% else %}
+
+  <!-- ROUTING SUMMARY -->
+  <div class="dash-card" style="margin-bottom:24px;">
+    <div class="dc-header"><h3>🧭 Order Routing</h3></div>
+    <div style="padding:20px 24px; display:flex; gap:40px; flex-wrap:wrap;">
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Matched Cluster</span>
+        <strong>
+          <a href="{% url 'cluster_detail' plan.cluster.label %}">
+            Cluster {{ plan.cluster.label }} — {{ plan.cluster.name }}
+          </a>
+        </strong>
+      </div>
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Livelihood (P)</span>
+        <strong>{{ plan.livelihood|title }}</strong>
+      </div>
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Allocation Mode</span>
+        <strong>
+          {% if plan.mode == 'direct' %}Direct Allocation
+          {% else %}Proportional Allocation{% endif %}
+        </strong>
+      </div>
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Partner SHGs</span>
+        <strong>{{ plan.partner_count }}{% if plan.state %} · {{ plan.state }}{% endif %}</strong>
+      </div>
+    </div>
+    <div style="padding:0 24px 20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'place_cluster_order' product.pk %}" style="margin:0;">
+          {% csrf_token %}
+          <input type="hidden" name="quantity" value="{{ plan.quantity }}">
+          <button type="submit" class="btn btn-primary">Place Cluster Order →</button>
+        </form>
+        <span style="font-size:0.8rem; color:var(--ink-soft);">
+          Distributes {{ plan.fulfilled }} units across {{ plan.partner_count }} SHGs.
+        </span>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn btn-primary">Log in to place this order →</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-grid" style="margin-bottom:28px;">
+    <div class="kpi-card kpi-orders">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Order Quantity (Q)</span>
+        <span class="kpi-value">{{ plan.quantity }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-cluster">
+      <div class="kpi-icon">⚡</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Total Capacity</span>
+        <span class="kpi-value">{{ plan.total_capacity }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-products">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Fulfilled</span>
+        <span class="kpi-value">{{ plan.fulfilled }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-revenue">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Fulfilment Ratio</span>
+        <span class="kpi-value">{{ plan.fulfilment_ratio }}</span>
+      </div>
+    </div>
+  </div>
+
+  {% if not plan.fully_fulfilled %}
+    <div class="form-error-box" style="margin-bottom:24px;">
+      <p>
+        Cluster capacity ({{ plan.total_capacity }}) is below the requested
+        quantity ({{ plan.quantity }}). Allocations below fill the available
+        capacity proportionally.
+      </p>
+    </div>
+  {% endif %}
+
+  <!-- ALLOCATION TABLE -->
+  <div class="dash-card">
+    <div class="dc-header">
+      <h3>
+        {% if plan.mode == 'direct' %}
+          Direct Allocation — a single SHG can fulfil the full order
+        {% else %}
+          Proportional Allocation — Aᵢ = (Cᵢ / C_total) × Q
+        {% endif %}
+      </h3>
+    </div>
+    <div class="dp-table-wrap" style="border:none; border-radius:0; box-shadow:none;">
+      <table class="dp-table">
+        <thead>
+          <tr>
+            <th>SHG Name</th>
+            <th>State</th>
+            <th>District</th>
+            <th>Capacity (Cᵢ)</th>
+            <th>Share</th>
+            <th>Allocated (Aᵢ)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in plan.allocations %}
+            <tr class="dpt-row">
+              <td><strong style="font-size:0.85rem;">{{ a.member.shg_name }}</strong></td>
+              <td class="dpt-date">{{ a.member.state }}</td>
+              <td class="dpt-date">{{ a.member.district }}</td>
+              <td class="dpt-orders">{{ a.capacity }}</td>
+              <td><span class="dpt-cat">{{ a.share_pct }}%</span></td>
+              <td class="dpt-price">{{ a.allocated }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3"><strong>Total</strong></td>
+            <td class="dpt-orders"><strong>{{ plan.total_capacity }}</strong></td>
+            <td></td>
+            <td class="dpt-price"><strong>{{ plan.fulfilled }}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  {% if plan.capped %}
+    <p style="margin-top:16px; font-size:0.82rem; color:var(--ink-soft);">
+      Showing the top {{ plan.partner_count }} partner SHGs by capacity in the
+      matching cluster. The proportional split is computed exactly over this
+      coordination group, so allocations sum to the fulfilled quantity.
+    </p>
+  {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock %}

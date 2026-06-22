@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Cluster Orders — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumb-bar">
+  <div class="container breadcrumb-inner">
+    <a href="{% url 'home' %}">Home</a>
+    <span class="bc-sep">›</span>
+    <span class="bc-current">My Cluster Orders</span>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Cluster Orders</span>
+      <h1 class="ph-title">My Cluster Orders</h1>
+      <p class="ph-sub">Bulk orders fulfilled collaboratively across SHG clusters.</p>
+    </div>
+    <a href="{% url 'product_list' %}" class="btn btn-outline btn-sm">Browse Marketplace →</a>
+  </div>
+</div>
+
+<div class="container" style="padding-top:32px; padding-bottom:60px;">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="form-error-box" style="margin-bottom:20px; background:var(--green-lt); border-color:rgba(58,125,68,.3); color:var(--green);">
+        <p>{{ message }}</p>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="dash-card">
+    <div class="dc-header"><h3>{{ orders.count }} cluster order{{ orders.count|pluralize }}</h3></div>
+    <div class="dp-table-wrap" style="border:none; border-radius:0; box-shadow:none;">
+      <table class="dp-table">
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Product</th>
+            <th>Cluster</th>
+            <th>Mode</th>
+            <th>Partners</th>
+            <th>Qty</th>
+            <th>Fulfilled</th>
+            <th>Placed</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders %}
+            <tr class="dpt-row">
+              <td><strong style="font-size:0.85rem;">#{{ o.pk }}</strong></td>
+              <td>{{ o.product_name }}</td>
+              <td class="dpt-date">{% if o.cluster %}{{ o.cluster.name }}{% else %}—{% endif %}</td>
+              <td><span class="dpt-cat">{{ o.get_mode_display }}</span></td>
+              <td class="dpt-orders">{{ o.partner_count }}</td>
+              <td class="dpt-orders">{{ o.quantity }}</td>
+              <td class="dpt-price">{{ o.fulfilled_quantity }}</td>
+              <td class="dpt-date">{{ o.created_at|date:"d M Y" }}</td>
+              <td><a href="{% url 'cluster_order_detail' o.pk %}" class="btn btn-outline btn-sm">View</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="9" style="text-align:center; padding:40px; color:var(--ink-soft);">
+              No cluster orders yet. Open a cluster-enabled product and place a bulk order.
+            </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

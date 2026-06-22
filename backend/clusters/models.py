@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from users.models import SHGProfile
 
 
@@ -73,3 +74,92 @@ class SHGClusterMember(models.Model):
 
     def __str__(self):
         return f"{self.shg_name} → Cluster {self.cluster.label}"
+
+
+class ClusterOrder(models.Model):
+    """
+    A bulk order placed through the Proportional Allocation Framework
+    (paper Section 6, Algorithm 2). Unlike a normal orders.Order — which is a
+    single buyer→single SHG→single product transaction — a ClusterOrder records
+    the committed distribution of one bulk quantity across many SHGs in the
+    matched livelihood cluster. Stored separately so the existing order flow is
+    untouched.
+    """
+    STATUS_CHOICES = [
+        ('PENDING',   'Pending'),
+        ('CONFIRMED', 'Confirmed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    MODE_CHOICES = [
+        ('direct',       'Direct Allocation'),
+        ('proportional', 'Proportional Allocation'),
+    ]
+
+    buyer        = models.ForeignKey(
+                     User, on_delete=models.CASCADE,
+                     related_name='cluster_orders')
+    # Product/cluster kept as SET_NULL so order history survives deletions and
+    # cluster re-imports; human-readable snapshots preserve the record.
+    product      = models.ForeignKey(
+                     'products.Product', on_delete=models.SET_NULL,
+                     null=True, blank=True, related_name='cluster_orders')
+    product_name = models.CharField(max_length=255)
+    cluster      = models.ForeignKey(
+                     SHGCluster, on_delete=models.SET_NULL,
+                     null=True, blank=True, related_name='cluster_orders')
+    livelihood   = models.CharField(max_length=100, blank=True)
+
+    quantity           = models.IntegerField()              # requested Q
+    fulfilled_quantity = models.IntegerField(default=0)     # sum of allocations
+    mode               = models.CharField(max_length=20, choices=MODE_CHOICES)
+    partner_count      = models.IntegerField(default=0)
+    status             = models.CharField(
+                            max_length=20, choices=STATUS_CHOICES,
+                            default='PENDING')
+    created_at         = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    @property
+    def fulfilment_ratio(self):
+        return round(self.fulfilled_quantity / self.quantity, 4) if self.quantity else 0
+
+    @property
+    def fully_fulfilled(self):
+        return self.fulfilled_quantity >= self.quantity
+
+    def __str__(self):
+        return f"ClusterOrder #{self.pk} — {self.product_name} ×{self.quantity}"
+
+
+class ClusterOrderAllocation(models.Model):
+    """
+    One SHG's share of a ClusterOrder: Ai units assigned to SHG i.
+    SHG details are snapshotted so the allocation survives cluster re-imports
+    (which delete and recreate SHGClusterMember rows).
+    """
+    cluster_order      = models.ForeignKey(
+                            ClusterOrder, on_delete=models.CASCADE,
+                            related_name='allocations')
+    # Soft reference only: import_clusters bulk-deletes and recreates every
+    # SHGClusterMember on each run. DO_NOTHING + db_constraint=False keeps this
+    # FK out of Django's deletion collector so that bulk delete stays a fast,
+    # single-statement delete. All displayed SHG data is snapshotted below, so
+    # a stale member_id is never read for display.
+    member             = models.ForeignKey(
+                            SHGClusterMember, on_delete=models.DO_NOTHING,
+                            null=True, blank=True, db_constraint=False,
+                            related_name='order_allocations')
+    shg_name           = models.CharField(max_length=255)
+    state              = models.CharField(max_length=100, blank=True)
+    district           = models.CharField(max_length=100, blank=True)
+    capacity           = models.IntegerField(default=0)     # Ci
+    allocated_quantity = models.IntegerField(default=0)     # Ai
+    share_pct          = models.FloatField(default=0)
+
+    class Meta:
+        ordering = ['-allocated_quantity']
+
+    def __str__(self):
+        return f"{self.shg_name}: {self.allocated_quantity} units"

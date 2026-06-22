@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cluster Order #{{ order.pk }} — SahayogBazaar{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumb-bar">
+  <div class="container breadcrumb-inner">
+    <a href="{% url 'home' %}">Home</a>
+    <span class="bc-sep">›</span>
+    <a href="{% url 'my_cluster_orders' %}">My Cluster Orders</a>
+    <span class="bc-sep">›</span>
+    <span class="bc-current">Order #{{ order.pk }}</span>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <div class="ph-left">
+      <span class="section-tag">Cluster Order</span>
+      <h1 class="ph-title">{{ order.product_name }}</h1>
+      <p class="ph-sub">
+        {{ order.quantity }} units ordered ·
+        {% if order.cluster %}{{ order.cluster.name }}{% else %}cluster removed{% endif %} ·
+        placed {{ order.created_at|date:"d M Y, H:i" }}
+      </p>
+    </div>
+    <a href="{% url 'my_cluster_orders' %}" class="btn btn-outline btn-sm">← All Cluster Orders</a>
+  </div>
+</div>
+
+<div class="container" style="padding-top:32px; padding-bottom:60px;">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="form-error-box" style="margin-bottom:20px; background:var(--green-lt); border-color:rgba(58,125,68,.3); color:var(--green);">
+        <p>{{ message }}</p>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- KPI ROW -->
+  <div class="kpi-grid" style="margin-bottom:28px;">
+    <div class="kpi-card kpi-orders">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Quantity Ordered</span>
+        <span class="kpi-value">{{ order.quantity }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-products">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Fulfilled</span>
+        <span class="kpi-value">{{ order.fulfilled_quantity }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-revenue">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Fulfilment Ratio</span>
+        <span class="kpi-value">{{ order.fulfilment_ratio }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-cluster">
+      <div class="kpi-icon">🧩</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Partner SHGs</span>
+        <span class="kpi-value">{{ order.partner_count }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-card" style="margin-bottom:24px;">
+    <div class="dc-header"><h3>Order Summary</h3></div>
+    <div style="padding:20px 24px; display:flex; gap:40px; flex-wrap:wrap;">
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Allocation Mode</span>
+        <strong>{{ order.get_mode_display }}</strong>
+      </div>
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Livelihood</span>
+        <strong>{{ order.livelihood|title|default:"—" }}</strong>
+      </div>
+      <div>
+        <span style="font-size:0.78rem; color:var(--ink-soft); display:block;">Status</span>
+        <strong>{{ order.get_status_display }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALLOCATION TABLE -->
+  <div class="dash-card">
+    <div class="dc-header"><h3>Per-SHG Allocation (Aᵢ = Cᵢ / C_total × Q)</h3></div>
+    <div class="dp-table-wrap" style="border:none; border-radius:0; box-shadow:none;">
+      <table class="dp-table">
+        <thead>
+          <tr>
+            <th>SHG Name</th>
+            <th>State</th>
+            <th>District</th>
+            <th>Capacity (Cᵢ)</th>
+            <th>Share</th>
+            <th>Allocated (Aᵢ)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in allocations %}
+            <tr class="dpt-row">
+              <td><strong style="font-size:0.85rem;">{{ a.shg_name }}</strong></td>
+              <td class="dpt-date">{{ a.state }}</td>
+              <td class="dpt-date">{{ a.district }}</td>
+              <td class="dpt-orders">{{ a.capacity }}</td>
+              <td><span class="dpt-cat">{{ a.share_pct }}%</span></td>
+              <td class="dpt-price">{{ a.allocated_quantity }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5"><strong>Total fulfilled</strong></td>
+            <td class="dpt-price"><strong>{{ order.fulfilled_quantity }}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

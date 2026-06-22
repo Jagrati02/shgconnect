@@ -9,8 +9,14 @@ Usage:
 
 import os
 import csv
+import re
 from django.core.management.base import BaseCommand
 from clusters.models import SHGCluster, SHGClusterMember
+
+
+def _normalize_name(value):
+    """Upper-case, trim, and collapse internal whitespace for name matching."""
+    return re.sub(r'\s+', ' ', (value or '').strip().upper())
 
 
 # ── Cluster label → human-readable name + description ──────────
@@ -230,13 +236,84 @@ class Command(BaseCommand):
         if batch:
             SHGClusterMember.objects.bulk_create(batch)
 
+        # ── Link registered SHG profiles to their cluster member ──
+        linked = self._link_profiles()
+
         self.stdout.write('')
         self.stdout.write(
             self.style.SUCCESS(
                 f'\n Import complete!\n'
                 f'   Clusters created: {clusters_created}\n'
                 f'   Members imported: {total:,}\n'
+                f'   Profiles linked:  {linked}\n'
                 f'\nRun: python manage.py runserver\n'
                 f'Visit: /clusters/ to see results'
             )
         )
+
+    def _link_profiles(self):
+        """
+        Populate SHGClusterMember.shg_profile for SHGs that are registered in
+        the Django DB. Matching is resolved in priority order:
+          1. SHGProfile.shg_id  ==  member.shg_code   (strongest)
+          2. normalised SHG name match, preferring the same state
+
+        Each profile links to at most one member and each member to at most one
+        profile (the FK is OneToOne), so links are tracked to avoid reuse.
+        Re-running is safe: members are recreated each import, so links are
+        rebuilt from scratch.
+        """
+        from users.models import SHGProfile
+
+        profiles = list(SHGProfile.objects.all())
+        if not profiles:
+            self.stdout.write('No registered SHG profiles to link.')
+            return 0
+
+        self.stdout.write('Linking registered SHG profiles to cluster members...')
+
+        by_code = {}
+        by_name = {}
+        for m in SHGClusterMember.objects.all():
+            code = str(m.shg_code).strip()
+            if code:
+                by_code.setdefault(code, m)
+            name_key = _normalize_name(m.shg_name)
+            if name_key:
+                by_name.setdefault(name_key, []).append(m)
+
+        linked     = 0
+        used_member = set()
+
+        for p in profiles:
+            member = None
+
+            # 1. strong match on code
+            code = str(p.shg_id).strip()
+            cand = by_code.get(code)
+            if cand is not None and cand.id not in used_member:
+                member = cand
+
+            # 2. name match (prefer same state)
+            if member is None:
+                candidates = [
+                    c for c in by_name.get(_normalize_name(p.shg_name), [])
+                    if c.id not in used_member
+                ]
+                if candidates:
+                    same_state = [
+                        c for c in candidates
+                        if _normalize_name(c.state) == _normalize_name(p.state)
+                    ]
+                    member = same_state[0] if same_state else candidates[0]
+
+            if member is not None:
+                member.shg_profile = p
+                member.save(update_fields=['shg_profile'])
+                used_member.add(member.id)
+                linked += 1
+
+        self.stdout.write(
+            f'  Linked {linked} of {len(profiles)} registered SHG profiles.'
+        )
+        return linked
