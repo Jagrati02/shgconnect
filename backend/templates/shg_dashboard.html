@@ -40,9 +40,6 @@
       <a href="#analytics"  class="snav-link" data-section="analytics">
         <span class="snav-icon">📊</span> Analytics
       </a>
-      <a href="#forecast"   class="snav-link" data-section="forecast">
-        <span class="snav-icon">🔮</span> AI Forecast
-      </a>
 
       <span class="snav-group-label">Products</span>
       <a href="{% url 'product_list' %}" class="snav-link">
@@ -177,10 +174,6 @@
             <a href="{% url 'my_orders' %}" class="qa-item">
               <span class="qa-icon">📋</span>
               <span>View Orders</span>
-            </a>
-            <a href="#forecast" class="qa-item snav-trigger" data-section="forecast">
-              <span class="qa-icon">🔮</span>
-              <span>AI Forecast</span>
             </a>
             <a href="#cluster" class="qa-item snav-trigger" data-section="cluster">
               <span class="qa-icon">🧩</span>
@@ -353,112 +346,6 @@
           <div class="chart-wrap chart-wrap-donut">
             <canvas id="categoryChart" height="220"></canvas>
           </div>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- ── SECTION: AI FORECAST ── -->
-    <section class="dash-section" id="section-forecast">
-      <div class="section-hd">
-        <h2>AI Demand Forecast</h2>
-        <p>ML-powered predictions to help you plan production smarter.</p>
-      </div>
-
-      <!-- Forecast summary -->
-      <div class="forecast-cards-grid">
-        {% for product in forecast_products %}
-          <div class="forecast-card">
-            <div class="fc-top">
-              <div class="fc-product-name">{{ product.name }}</div>
-              <span class="fc-trend
-                {% if product.forecast_direction == 'up' %}fc-up
-                {% elif product.forecast_direction == 'down' %}fc-down
-                {% else %}fc-stable{% endif %}">
-                {% if product.forecast_direction == 'up' %}↑ Rising
-                {% elif product.forecast_direction == 'down' %}↓ Falling
-                {% else %}→ Stable{% endif %}
-              </span>
-            </div>
-
-            <div class="fc-demand-row">
-              <span class="fc-label">30-day Demand Score</span>
-              <span class="fc-score">{{ product.demand_score|default:0 }}%</span>
-            </div>
-            <div class="fc-bar-wrap">
-              <div class="fc-bar" data-width="{{ product.demand_score|default:0 }}"></div>
-            </div>
-
-            <div class="fc-metrics">
-              <div class="fc-metric">
-                <span>Predicted Orders</span>
-                <strong>{{ product.predicted_orders|default:"—" }}</strong>
-              </div>
-              <div class="fc-metric">
-                <span>Suggested Stock</span>
-                <strong>{{ product.suggested_stock|default:"—" }}</strong>
-              </div>
-              <div class="fc-metric">
-                <span>Peak Period</span>
-                <strong>{{ product.peak_period|default:"—" }}</strong>
-              </div>
-            </div>
-
-            <a href="{% url 'edit_product' product.pk %}" class="btn btn-outline btn-sm" style="margin-top:4px">
-              Update Stock →
-            </a>
-          </div>
-        {% empty %}
-          <div class="dc-empty" style="grid-column:1/-1; padding:60px;">
-            <span>🔮</span>
-            <p>Add products and enable forecasting to see AI predictions here.</p>
-            <a href="{% url 'add_product' %}" class="btn btn-primary" style="margin-top:14px">Add a Product</a>
-          </div>
-        {% endfor %}
-      </div>
-
-      <!-- Market signals -->
-      <div class="dash-card" style="margin-top:24px;">
-        <div class="dc-header">
-          <h3>🌐 Market Signals</h3>
-          <span class="dc-updated">Updated today</span>
-        </div>
-        <div class="market-signals">
-          {% for signal in market_signals %}
-            <div class="ms-item">
-              <span class="ms-icon">{{ signal.icon|default:"📈" }}</span>
-              <div class="ms-body">
-                <strong>{{ signal.title }}</strong>
-                <p>{{ signal.description }}</p>
-              </div>
-              <span class="ms-tag ms-{{ signal.type }}">{{ signal.type|title }}</span>
-            </div>
-          {% empty %}
-            <div class="ms-item">
-              <span class="ms-icon">🌾</span>
-              <div class="ms-body">
-                <strong>Organic food products trending</strong>
-                <p>Buyer demand for organic pickles and oils is up 34% this month.</p>
-              </div>
-              <span class="ms-tag ms-opportunity">Opportunity</span>
-            </div>
-            <div class="ms-item">
-              <span class="ms-icon">🎉</span>
-              <div class="ms-body">
-                <strong>Festive season approaching</strong>
-                <p>Handicraft and textile orders typically spike 60% in Oct–Dec.</p>
-              </div>
-              <span class="ms-tag ms-opportunity">Opportunity</span>
-            </div>
-            <div class="ms-item">
-              <span class="ms-icon">⚠️</span>
-              <div class="ms-body">
-                <strong>Low stock on 2 products</strong>
-                <p>You may miss orders if stock isn't replenished within 10 days.</p>
-              </div>
-              <span class="ms-tag ms-warning">Warning</span>
-            </div>
-          {% endfor %}
         </div>
       </div>
 
@@ -739,19 +626,9 @@
               <span class="status-pill status-delivered" style="font-size:0.72rem;">Active</span>
             </div>
           {% empty %}
-            <div class="cm-row">
-              <div class="cm-avatar">⬡</div>
-              <div class="cm-info"><strong>Mahila Udyog SHG</strong><span>Jaipur, Rajasthan</span></div>
-              <div class="cm-products"><span>2 shared products</span></div>
-              <div class="cm-capacity"><span class="cm-cap-label">Capacity</span><strong>4,000 units</strong></div>
-              <span class="status-pill status-delivered" style="font-size:0.72rem;">Active</span>
-            </div>
-            <div class="cm-row">
-              <div class="cm-avatar">⬡</div>
-              <div class="cm-info"><strong>Grameen Shakti SHG</strong><span>Ajmer, Rajasthan</span></div>
-              <div class="cm-products"><span>1 shared product</span></div>
-              <div class="cm-capacity"><span class="cm-cap-label">Capacity</span><strong>3,500 units</strong></div>
-              <span class="status-pill status-delivered" style="font-size:0.72rem;">Active</span>
+            <div class="dc-empty" style="padding:32px;">
+              <span>🧩</span>
+              <p>Your SHG isn't matched to a cluster yet. Cluster assignments are generated by the ML clustering import.</p>
             </div>
           {% endfor %}
         </div>
@@ -917,9 +794,8 @@
 <div id="chartData"
   data-revenue="{{ monthly_revenue|default:'[0,0,0,0,0,0,0,0,0,0,0,0]' }}"
   data-orders="{{ monthly_orders|default:'[0,0,0,0,0,0,0,0,0,0,0,0]' }}"
-  data-category="{{ category_data|default:'[40,25,20,15]' }}"
-  data-category-labels="{{ category_labels|default:'[0,1,2,3]' }}"
-  data-category-names="Textiles|Food|Handicrafts|Other"
+  data-category="{{ category_data|default:'[]' }}"
+  data-category-names="{{ category_names }}"
   hidden>
 </div>
 

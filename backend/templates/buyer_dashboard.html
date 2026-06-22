@@ -601,7 +601,7 @@
         </div>
       </div>
 
-      <!-- Bulk orders table -->
+      <!-- Bulk orders table — real ClusterOrders placed via the allocation framework -->
       {% if bulk_orders %}
         <div class="dp-table-wrap">
           <table class="dp-table">
@@ -610,8 +610,8 @@
                 <th>Order ID</th>
                 <th>Product</th>
                 <th>Quantity</th>
-                <th>Unit Price</th>
-                <th>Total</th>
+                <th>Fulfilled</th>
+                <th>Mode</th>
                 <th>Cluster</th>
                 <th>Status</th>
                 <th>Date</th>
@@ -619,30 +619,28 @@
               </tr>
             </thead>
             <tbody>
-              {% for order in bulk_orders %}
+              {% for co in bulk_orders %}
                 <tr class="dpt-row">
-                  <td><span class="dpt-id">#{{ order.pk }}</span></td>
+                  <td><span class="dpt-id">#{{ co.pk }}</span></td>
                   <td>
                     <div class="dpt-product">
                       <div class="dpt-thumb-ph">🧺</div>
-                      {% with fi=order.items.first %}
-                      <strong>{% if fi %}{{ fi.product.name }}{% else %}Order #{{ order.pk }}{% endif %}</strong>
-                      {% endwith %}
+                      <strong>{{ co.product_name }}</strong>
                     </div>
                   </td>
-                  <td class="dpt-orders">{% for item in order.items.all %}{{ item.quantity }}{% if not forloop.last %}+{% endif %}{% endfor %}</td>
-                  <td class="dpt-price">{% with fi=order.items.first %}{% if fi %}₹{{ fi.price }}{% else %}—{% endif %}{% endwith %}</td>
-                  <td class="dpt-price">₹{{ order.total_price }}</td>
+                  <td class="dpt-orders">{{ co.quantity }}</td>
+                  <td class="dpt-orders">{{ co.fulfilled_quantity }}</td>
+                  <td><span class="dpt-cat">{{ co.get_mode_display }}</span></td>
                   <td>
-                    {% if order.cluster_used %}
-                      <span class="badge badge-cluster" style="font-size:0.72rem;">⬡ {{ order.cluster_size }} SHGs</span>
+                    {% if co.cluster %}
+                      <span class="badge badge-cluster" style="font-size:0.72rem;">⬡ {{ co.partner_count }} SHGs · {{ co.cluster.name }}</span>
                     {% else %}
-                      <span style="font-size:0.8rem; color:var(--ink-soft);">Direct</span>
+                      <span style="font-size:0.8rem; color:var(--ink-soft);">—</span>
                     {% endif %}
                   </td>
-                  <td><span class="status-pill status-{{ order.order_status|lower }}">{{ order.get_order_status_display }}</span></td>
-                  <td class="dpt-date">{{ order.order_date|date:"d M Y" }}</td>
-                  <td><a href="{% url 'order_detail' order.pk %}" class="dpt-btn" title="View">👁</a></td>
+                  <td><span class="status-pill status-{{ co.status|lower }}">{{ co.get_status_display }}</span></td>
+                  <td class="dpt-date">{{ co.created_at|date:"d M Y" }}</td>
+                  <td><a href="{% url 'cluster_order_detail' co.pk %}" class="dpt-btn" title="View">👁</a></td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -651,7 +649,7 @@
       {% else %}
         <div class="dc-empty" style="padding:60px;">
           <span>📦</span>
-          <p>No bulk orders yet. Orders above the cluster threshold will appear here.</p>
+          <p>No bulk orders yet. Place a large order on a cluster-enabled product to distribute it across an SHG cluster.</p>
           <a href="{% url 'product_list' %}" class="btn btn-primary" style="margin-top:14px;">Browse Products</a>
         </div>
       {% endif %}
@@ -905,8 +903,8 @@
 <!-- Chart data stored in data attributes — avoids Django tags inside <script> -->
 <div id="chartData"
   data-spending="{{ monthly_spending|default:'[0,0,0,0,0,0,0,0,0,0,0,0]' }}"
-  data-category="{{ category_spending_data|default:'[40,25,20,15]' }}"
-  data-category-names="{{ category_spending_labels_str|default:'Textiles|Food|Handicrafts|Other' }}"
+  data-category="{{ category_spending_data|default:'[]' }}"
+  data-category-names="{{ category_spending_labels_str }}"
   hidden>
 </div>
 
