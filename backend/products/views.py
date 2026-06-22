@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db.models import Q
 from .models import Product, Category
 from .forms import ProductForm
 
@@ -13,10 +14,18 @@ from .forms import ProductForm
 def product_list(request):
     products = Product.objects.filter(is_active=True).select_related('shg', 'category')
 
-    # Search
+    # Search — across product name, description, tags, SHG name/state and
+    # category name (matches the "products, SHGs, categories…" search hint).
     q = request.GET.get('q', '').strip()
     if q:
-        products = products.filter(name__icontains=q)
+        products = products.filter(
+            Q(name__icontains=q) |
+            Q(description__icontains=q) |
+            Q(tags__icontains=q) |
+            Q(shg__shg_name__icontains=q) |
+            Q(shg__state__icontains=q) |
+            Q(category__name__icontains=q)
+        ).distinct()
 
     # Category filter
     category = request.GET.get('category', '')
@@ -44,7 +53,11 @@ def product_list(request):
     page      = request.GET.get('page')
     products  = paginator.get_page(page)
 
-    categories = Category.objects.all()
+    # Only categories that actually have active products — keeps the dropdown
+    # meaningful (empty seed categories are hidden).
+    categories = Category.objects.filter(
+        product__is_active=True
+    ).distinct().order_by('name')
 
     context = {
         'products':   products,

@@ -29,7 +29,7 @@
           value="{{ request.GET.q }}" class="search-input">
       </div>
 
-      <select name="category" class="filter-select">
+      <select name="category" class="filter-select" onchange="this.form.submit()">
         <option value="">All Categories</option>
         {% for cat in categories %}
           <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
@@ -38,7 +38,7 @@
         {% endfor %}
       </select>
 
-      <select name="sort" class="filter-select">
+      <select name="sort" class="filter-select" onchange="this.form.submit()">
         <option value="">Sort By</option>
         <option value="price_asc"  {% if request.GET.sort == 'price_asc'  %}selected{% endif %}>Price: Low → High</option>
         <option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>Price: High → Low</option>
@@ -56,21 +56,10 @@
 <!-- ── MAIN CONTENT ── -->
 <div class="container pl-layout">
 
-  <div class="forecast-banner">
-    <div class="fb-left">
-      <span class="fb-icon">🔮</span>
-      <div>
-        <strong>AI Demand Insight</strong>
-        <p>Handwoven textiles & organic food products are trending <em>↑ 34%</em> this month.</p>
-      </div>
-    </div>
-    <a href="#" class="btn btn-ghost btn-sm">View Full Forecast →</a>
-  </div>
-
   <div class="results-row">
     <span class="results-count">
       {% if products %}
-        Showing <strong>{{ products|length }}</strong> product{{ products|length|pluralize }}
+        Showing <strong>{{ products.paginator.count }}</strong> product{{ products.paginator.count|pluralize }}
         {% if request.GET.q %} for "<em>{{ request.GET.q }}</em>"{% endif %}
       {% else %}
         No products found
