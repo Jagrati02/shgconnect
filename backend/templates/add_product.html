@@ -231,18 +231,6 @@
             </label>
           </div>
 
-          <div class="toggle-row">
-            <div>
-              <strong>Enable Demand Forecasting</strong>
-              <p>Get AI-generated weekly demand predictions for this product.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" name="forecast_enabled" id="forecastEnabled"
-                {% if form.forecast_enabled.value %}checked{% endif %}>
-              <span class="toggle-track"></span>
-            </label>
-          </div>
-
           <div class="form-group" id="clusterSizeGroup">
             <label for="max_cluster_size">Max Cluster Size (SHGs)</label>
             <input type="number" id="max_cluster_size" name="max_cluster_size"
@@ -293,25 +281,6 @@
       </ul>
     </div>
 
-    <div class="tip-card tip-card-forecast">
-      <h4>🔮 AI Forecast Preview</h4>
-      <p>Based on current buyer trends, products in your category have seen:</p>
-      <div class="forecast-mini">
-        <div class="fm-row">
-          <span>Demand Trend</span>
-          <span class="fm-val trend-up">↑ 28%</span>
-        </div>
-        <div class="fm-row">
-          <span>Avg. Bulk Order</span>
-          <span class="fm-val">3,200 units</span>
-        </div>
-        <div class="fm-row">
-          <span>Peak Season</span>
-          <span class="fm-val">Oct – Jan</span>
-        </div>
-      </div>
-      <small>Enable forecasting to get product-specific insights.</small>
-    </div>
 
     <div class="tip-card tip-card-cluster">
       <h4>🧩 How Clustering Works</h4>

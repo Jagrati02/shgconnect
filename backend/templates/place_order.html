@@ -90,9 +90,17 @@
           {% if product.cluster_enabled %}
             <div style="background:var(--green-lt); border:1px solid rgba(58,125,68,.25);
                         border-radius:var(--radius-sm); padding:10px 14px;
-                        font-size:0.83rem; color:var(--green); display:flex; gap:8px;">
-              <span>🧩</span>
-              <span>Cluster matching enabled — large orders fulfilled by nearby SHGs.</span>
+                        font-size:0.83rem; color:var(--green); display:flex;
+                        flex-direction:column; gap:6px;">
+              <div style="display:flex; gap:8px;">
+                <span>🧩</span>
+                <span>Cluster matching enabled — large orders fulfilled by nearby SHGs.</span>
+              </div>
+              <a href="{% url 'allocation_plan' product.pk %}"
+                 id="allocationLink"
+                 style="font-weight:600; color:var(--green); text-decoration:underline;">
+                Preview cluster allocation plan →
+              </a>
             </div>
           {% endif %}
         </div>
@@ -228,6 +236,20 @@
   });
 
   updateTotal();
+
+  // Keep the cluster allocation-plan link in sync with the chosen quantity.
+  const allocationLink = document.getElementById('allocationLink');
+  if (allocationLink) {
+    const baseHref = allocationLink.getAttribute('href');
+    function updateAllocationLink() {
+      const qty = parseInt(qtyInput.value) || minQty;
+      allocationLink.href = baseHref + '?quantity=' + qty;
+    }
+    qtyInput.addEventListener('change', updateAllocationLink);
+    document.getElementById('qtyMinus').addEventListener('click', updateAllocationLink);
+    document.getElementById('qtyPlus').addEventListener('click', updateAllocationLink);
+    updateAllocationLink();
+  }
 </script>
 
 {% endblock %}

@@ -240,22 +240,11 @@
           <!-- Existing images -->
           {% if product.image %}
             <div class="existing-images-wrap">
-              <p class="existing-label">Current Images</p>
+              <p class="existing-label">Current Image</p>
               <div class="existing-images-grid">
-                
-                  <div class="existing-img-card" id="imgCard{{ img.pk }}">
-                    <img src="{{ product.image.url }}" alt="Product image {{ forloop.counter }}">
-                    <button
-                      type="button"
-                      class="eic-delete"
-                      data-img-id="{{ img.pk }}"
-                      title="Remove this image"
-                      onclick="markImageDelete(this)"
-                    >✕</button>
-                    <!-- Hidden field set when user marks for deletion -->
-                    <input type="hidden" name="delete_image" value="{{ img.pk }}" id="delImg{{ img.pk }}" disabled>
-                  </div>
-                {% endfor %}
+                <div class="existing-img-card" id="imgCard{{ product.pk }}">
+                  <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                </div>
               </div>
             </div>
           {% endif %}
@@ -284,7 +273,7 @@
           <span class="fs-num">04</span>
           <div>
             <h3>Cluster & AI Settings</h3>
-            <p>Control cluster matching and demand forecasting for this product.</p>
+            <p>Control cluster matching for this product.</p>
           </div>
         </div>
         <div class="fs-body">
@@ -301,23 +290,11 @@
             </label>
           </div>
 
-          <div class="toggle-row">
-            <div>
-              <strong>Enable Demand Forecasting</strong>
-              <p>Receive AI-generated weekly demand predictions for this product.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" name="forecast_enabled" id="forecastEnabled"
-                {% if product.forecast_enabled %}checked{% endif %}>
-              <span class="toggle-track"></span>
-            </label>
-          </div>
-
           <div class="form-group">
             <label for="max_cluster_size">Max Cluster Size (SHGs)</label>
             <input type="number" id="max_cluster_size" name="max_cluster_size"
               placeholder="e.g. 5" min="2" max="20"
-              value="{{ form.max_cluster_size.value|default:product.max_cluster_size }}">
+              value="{{ form.max_cluster_size.value|default:'' }}">
             <span class="form-hint">Maximum number of SHGs that can join this product's cluster.</span>
           </div>
 
@@ -414,31 +391,11 @@
       </div>
     </div>
 
-    <!-- AI Forecast snapshot -->
-    <div class="tip-card tip-card-forecast">
-      <h4>🔮 Current Forecast</h4>
-      <p>Latest AI demand signal for this product:</p>
-      <div class="forecast-mini">
-        <div class="fm-row">
-          <span>Demand Score</span>
-          <span class="fm-val">{{ product.demand_score|default:"—" }}%</span>
-        </div>
-        <div class="fm-row">
-          <span>Trend</span>
-          <span class="fm-val trend-up">{{ product.forecast_trend|default:"Stable" }}</span>
-        </div>
-        <div class="fm-row">
-          <span>Last Updated</span>
-          <span class="fm-val">{{ product.forecast_updated|date:"d M"|default:"—" }}</span>
-        </div>
-      </div>
-    </div>
-
     <!-- Edit tips -->
     <div class="tip-card">
       <h4>✏️ Edit Tips</h4>
       <ul class="tip-list">
-        <li>Updating stock triggers a fresh demand forecast run</li>
+        <li>Keep stock accurate so buyers always see real availability</li>
         <li>Price changes take effect immediately for new orders</li>
         <li>Existing pending orders keep the original price</li>
         <li>Re-enable clustering to join new bulk order pools</li>

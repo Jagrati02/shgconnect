@@ -38,6 +38,13 @@
         {% endfor %}
       </select>
 
+      <select name="state" class="filter-select" onchange="this.form.submit()">
+        <option value="">All States</option>
+        {% for s in states %}
+          <option value="{{ s }}" {% if request.GET.state == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+
       <select name="sort" class="filter-select" onchange="this.form.submit()">
         <option value="">Sort By</option>
         <option value="price_asc"  {% if request.GET.sort == 'price_asc'  %}selected{% endif %}>Price: Low → High</option>
@@ -46,7 +53,7 @@
       </select>
 
       <button type="submit" class="btn btn-primary btn-sm">Apply</button>
-      {% if request.GET.q or request.GET.category or request.GET.sort %}
+      {% if request.GET.q or request.GET.category or request.GET.state or request.GET.sort %}
         <a href="{% url 'product_list' %}" class="btn btn-outline btn-sm">Clear ✕</a>
       {% endif %}
     </form>
@@ -126,17 +133,17 @@
     {% if products.has_other_pages %}
       <nav class="pagination" aria-label="Product pages">
         {% if products.has_previous %}
-          <a href="?page={{ products.previous_page_number }}&q={{ request.GET.q }}&category={{ request.GET.category }}&sort={{ request.GET.sort }}" class="page-btn">← Prev</a>
+          <a href="?page={{ products.previous_page_number }}&q={{ request.GET.q }}&category={{ request.GET.category }}&state={{ request.GET.state }}&sort={{ request.GET.sort }}" class="page-btn">← Prev</a>
         {% endif %}
         {% for num in products.paginator.page_range %}
           {% if products.number == num %}
             <span class="page-btn page-current">{{ num }}</span>
           {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
-            <a href="?page={{ num }}&q={{ request.GET.q }}&category={{ request.GET.category }}&sort={{ request.GET.sort }}" class="page-btn">{{ num }}</a>
+            <a href="?page={{ num }}&q={{ request.GET.q }}&category={{ request.GET.category }}&state={{ request.GET.state }}&sort={{ request.GET.sort }}" class="page-btn">{{ num }}</a>
           {% endif %}
         {% endfor %}
         {% if products.has_next %}
-          <a href="?page={{ products.next_page_number }}&q={{ request.GET.q }}&category={{ request.GET.category }}&sort={{ request.GET.sort }}" class="page-btn">Next →</a>
+          <a href="?page={{ products.next_page_number }}&q={{ request.GET.q }}&category={{ request.GET.category }}&state={{ request.GET.state }}&sort={{ request.GET.sort }}" class="page-btn">Next →</a>
         {% endif %}
       </nav>
     {% endif %}

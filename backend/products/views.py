@@ -59,10 +59,18 @@ def product_list(request):
         product__is_active=True
     ).distinct().order_by('name')
 
+    # Distinct states that have active products — powers the geographic filter.
+    states = (
+        Product.objects.filter(is_active=True)
+        .exclude(shg__state__isnull=True).exclude(shg__state='')
+        .values_list('shg__state', flat=True)
+        .distinct().order_by('shg__state')
+    )
+
     context = {
         'products':   products,
         'categories': categories,
-        'states':     [],   # pass list of (code, name) tuples if needed
+        'states':     states,
     }
     return render(request, 'product_list.html', context)
 
